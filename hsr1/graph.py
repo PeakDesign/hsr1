@@ -53,7 +53,7 @@ class Graph:
                  output_location:str=None, 
                  diffuse_name:str="DIF", 
                  timezone:str="+00:00",
-                 dpi:int=100,
+                 dpi:int=300,
                  **kwargs):
         """a general class for easy access to all the different graph options
         params:
