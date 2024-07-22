@@ -66,20 +66,13 @@ class DailyDipsSummary:
             all_dates[-1] += 1
             
         
-        hist, *_ = np.histogram2d(all_dates, nlargest, bins=bins, weights=weights, range=[[all_dates[0], all_dates[-1]], [0, 1100]])
+        hist, *_ = np.histogram2d(all_dates, nlargest, bins=bins, weights=weights, range=[[all_dates[0], all_dates[-1]], [300, bins[1]+300]])
         hist = hist.T
         hist = np.flip(hist, 0)
         hist[hist == 0.0] = np.nan
         
-        extent = (all_dates[0], all_dates[-1], 0, 1100)
-        
-        
-        
-        image = axes.imshow(hist, cmap="jet", vmin=1, aspect="auto", extent=extent)
-        
-        axes.set_ylim(300, cutoff_wavelength)
-        # hist = axes.hist2d(all_dates, nlargest, cmap="jet", bins=bins, cmin=1, weights=weights)
-        
+        extent = (all_dates[0], all_dates[-1], 300, bins[1]+300)
+        image = axes.imshow(hist, cmap="jet", vmin=1, aspect="auto", extent=extent, interpolation="none")        
         
         axes.set_ylim(300, cutoff_wavelength)
         
