@@ -78,15 +78,15 @@ def calc_air_mass(Sza, pressure = 1013.25):
     mu = C + a*(b - np.degrees(Sza))**(-c) # atm. air mass (note 1/m in Wood et. al 2019)
     return pressure / 1013.25 / mu
 
-def calc_aot_direct(ed, eds, sza, e_solar, sed=None, aod_type=["total_od", "aod_microtops", "aod_wood_2017"]):
+def calc_aot_direct(ed, eds, sza, e_solar=None, sed=None, aod_type=["total_od", "aod_microtops", "aod_wood_2017"], et_wavelengths=None):
     """calculates the atmospheric optical depth in several different ways
     
     params:
         ed: the global spectral irradiance. columns=wavelength, index=time, timestamp in utc
         eds: the diffuse spectral irradiance. columns=wavelength, index=time, timestamp in utc
-        sza: the solar zenith angle in radians. column = "sza", index=time, timestamp in utc
+        sza: the solar zenith angle in radians. column = "sza"
         e_solar: the extraterrestrial solar spectrum. columns=wavelength, index=time, timestamp in utc
-        sed: sun earth distance in AU. if None, calculated from time. this is quite slow so this parameter
+        sed: sun earth distance in AU, pandas Series. if None, calculated from time. this is quite slow so this parameter
             can speed it up if you are already loading from the database
         aod_type: the desired outputs string or list of strings
         
@@ -101,8 +101,13 @@ def calc_aot_direct(ed, eds, sza, e_solar, sed=None, aod_type=["total_od", "aod_
         tau_a/microtops_aod: the aerosol optical depth. this is the optical depth with rayleigh scattering removed
         tau_corr/aod_wood_2017: the aerosol optical depth with an empirical correction applied to it
     """
+    if e_solar is None:
+        e_solar = load_et_spectrum(wavelengths=et_wavelengths)
+    
+    
     edd = (ed - eds)
-    edni = edd.divide(np.cos(sza.values.astype(float)),axis="index")
+    
+    edni = edd.divide(np.cos(sza.values.astype(float)), axis="index")
     
     sun = ephem.Sun()
     
@@ -239,16 +244,7 @@ def calc_aod_from_df(data, cimel=False, aod_type=["total_od", "aod_microtops", "
         ed = ed[wavelengths]
         eds = eds[wavelengths]
     
-    res = importlib_resources.files("hsr1.data").joinpath("SolarSpectrum.txt")
-    file = importlib_resources.as_file(res)
-    with file as f:
-        reference_filepath = f
-    e_solar = pd.read_csv(reference_filepath, skiprows=1, delimiter='\t', index_col=0)
-    smoothed_e_solar = e_solar.rolling(3).mean().T
-    smoothed_e_solar = smoothed_e_solar.fillna(e_solar.T)
-    
-    e_solar_df = pd.DataFrame(columns = wavelengths)
-    e_solar_df.loc[0, :] = smoothed_e_solar[wavelengths].values
+    e_solar_df = load_et_spectrum(wavelengths=wavelengths)
     
     aod_data = None
     if cimel:
@@ -258,8 +254,32 @@ def calc_aod_from_df(data, cimel=False, aod_type=["total_od", "aod_microtops", "
     
     return aod_data
 
+def load_et_spectrum(filepath=None, wavelengths=np.arange(300, 1101)):
+    """loads a .txt file containing a reference extraterrestrial solar spectrum
+    params:
+        filepath: filepath to the file where the spectrum is stored. if None, 
+            a default spectrum that comes with the library is used
+        wavelengths: which wavelengths to use from the reference file
+    """
+    if filepath is None:
+        res = importlib_resources.files("hsr1.data").joinpath("SolarSpectrum.txt")
+        file = importlib_resources.as_file(res)
+        with file as f:
+            filepath = f
+    
+    e_solar = pd.read_csv(filepath, skiprows=1, delimiter='\t', index_col=0)
+    smoothed_e_solar = e_solar.rolling(3).mean().T
+    smoothed_e_solar = smoothed_e_solar.fillna(e_solar.T)
+    
+    e_solar_df = pd.DataFrame(columns=wavelengths)
+    e_solar_df.loc[0, :] = smoothed_e_solar[wavelengths].values
+    
+    return e_solar_df
 
-def calculate_clearsky_wood(data, column="total_od", 
+
+def calculate_clearsky_wood(data, global_spectrum=None,
+                            diffuse_spectrum=None,
+                            column="total_od", 
                             absolute_filter:float=2, 
                             relative_filter:float=0.05,
                             relative_time_period:str="10min"):
@@ -280,7 +300,11 @@ def calculate_clearsky_wood(data, column="total_od",
     
     returns a numpy array the same length as input dataframe with ones and zeros, 1=clearsky 0=cloud
     """
-    aod_data = calc_aod_from_df(data, aod_type=column, wavelengths=[500])
+    aod_data = None
+    if global_spectrum is None and diffuse_spectrum is None:
+        aod_data = calc_aod_from_df(data, aod_type=column, wavelengths=[500])
+    else:
+        aod_data = calc_aot_direct(pd.DataFrame(global_spectrum[500]), pd.DataFrame(diffuse_spectrum[500]), pd.DataFrame(data["sza"]), et_wavelengths=[500])
     nm500 = np.stack(aod_data[column].values)[:, 0]
     nm500df = pd.DataFrame(index=pd.DatetimeIndex(data["pc_time_end_measurement"]))
     nm500df["base"] = nm500
@@ -294,41 +318,8 @@ def calculate_clearsky_wood(data, column="total_od",
     clearsky_filter = np.logical_and(nm500df_abs.values, nm500 < absolute_filter)
     return clearsky_filter
 
-# def calculate_clearsky_wood(data:pd.DataFrame, reading_index:int=200, 
-#                             column="total_od",
-#                             absolute_filter:float=2, relative_filter:float=0.05,
-#                             relative_time_period:str="10min"):
-#     """calculates which readings are cloudfree
-    
-#     params:
-#         data: dataframe with at least columns ["total_od", "pc_time_end_measurement"]
-#         reading_index: the wavelength that is used for the clearsky calculations
-#             if on a full 300-1100nm spectra, make sure to subtract 300 from the wavelength you want to use
-#         absolute_filter: any readings higher than this will be filtered out
-#         relative_filter: any readings that are more than this value more or less than any
-#             other within the time window will be filtered out
-#         relative_time_period: the time period over which the relative filtering is done.
-#             this is the total time period that the filtering is done by, so if you want
-#             5 mins either side, pass 10min
-#             format is a string that will be passed to pd.Timedelta. documentation:
-#             https://pandas.pydata.org/docs/reference/api/pandas.Timedelta.html
-    
-#     returns a numpy array the same length as input dataframe with ones and zeros, 1=clearsky 0=cloud
-#     """
-#     nm500 = np.stack(data[column].values)[:, reading_index]
-#     nm500df = pd.DataFrame(index=pd.DatetimeIndex(data["pc_time_end_measurement"]))
-#     nm500df["base"] = nm500
-#     nm500df["max"] = nm500df.rolling(pd.Timedelta(relative_time_period), center=True)["base"].max()-nm500df["base"]
-#     nm500df["min"] = nm500df.rolling(pd.Timedelta(relative_time_period), center=True)["base"].min()-nm500df["base"]
-#     nm500df["max"] = np.abs(nm500df["max"])
-#     nm500df["min"] = np.abs(nm500df["min"])
-#     nm500df["abs"] = np.logical_and(nm500df["max"] < relative_filter, nm500df["min"] < relative_filter)
-#     nm500df_abs = np.logical_and(nm500df["max"] < relative_filter, nm500df["min"] < relative_filter)
-    
-#     clearsky_filter = np.logical_and(nm500df_abs.values, nm500 < absolute_filter)
-#     return clearsky_filter
 
-def calculate_clearsky_filter(data:pd.DataFrame, method:str="wood", kwargs:dict={}):
+def calculate_clearsky_filter(data:pd.DataFrame, global_spectrum=None, diffuse_spectrum=None, method:str="wood", kwargs:dict={}):
     """method that calls the appropriate clearsky function
     
     params:
@@ -339,7 +330,7 @@ def calculate_clearsky_filter(data:pd.DataFrame, method:str="wood", kwargs:dict=
     if method is None:
         return np.ones(len(data)).astype(bool)
     if method == "wood":
-        return calculate_clearsky_wood(data, **kwargs)
+        return calculate_clearsky_wood(data, global_spectrum, diffuse_spectrum, **kwargs)
     
     print("filtering method not recognised, not filtering")
     return np.ones(len(data)).astype(bool)

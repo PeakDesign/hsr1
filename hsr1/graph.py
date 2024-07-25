@@ -240,7 +240,7 @@ class Graph:
         
         aod = np.stack(aod_data[aod_type].values)[:, wavelengths-300] if not cimel_wavelengths else aod_data[aod_type].values
         
-        clearsky_filter = HsrFunc.calculate_clearsky_filter(data, clearsky_filter, clearsky_filter_kwargs)
+        clearsky_filter = HsrFunc.calculate_clearsky_filter(data, method=clearsky_filter, kwargs=clearsky_filter_kwargs)
         aod = aod[clearsky_filter]
         time_col = aod_data["pc_time_end_measurement"][clearsky_filter].reset_index(drop=True)
         
@@ -413,7 +413,7 @@ class Graph:
         aod_data = HsrFunc.calc_aod_from_df(data)
         aod_data[["global_integral", "diffuse_integral"]] = data[["global_integral", "diffuse_integral"]]
         
-        clearsky_filter = HsrFunc.calculate_clearsky_filter(data, clearsky_filter, clearsky_filter_kwargs)
+        clearsky_filter = HsrFunc.calculate_clearsky_filter(data, method=clearsky_filter, kwargs=clearsky_filter_kwargs)
         
         all_daytime_timestamps = pd.to_datetime(data.loc[data["sza"] < np.radians(90), "pc_time_end_measurement"]).dt.tz_localize(None)
         

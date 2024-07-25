@@ -124,15 +124,14 @@ class DBDriver:
              deserialise:bool=True,
              timezone:str="+00:00"
              ) -> pd.DataFrame:
-        return self.db_load.load(column,
-                                 table,
-                                 start_time,
-                                 end_time,
-                                 condition,
-                                 raise_on_missing,
-                                 sort,
-                                 deserialise,
-                                 timezone)
+        return self.db_load.load_spectrum(column,
+                                          table,
+                                          start_time,
+                                          end_time,
+                                          condition,
+                                          raise_on_missing,
+                                          sort,
+                                          timezone)
 
 
     def exists(self) -> bool:
