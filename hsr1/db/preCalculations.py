@@ -121,42 +121,29 @@ class PreCalculations:
     
     def calculate_all(self, data, method=None):
         """calculates all the precalculated values
+
         returns a dataframe with them all in as columns
         """
         
         
-        # if self.mobile is None:
-        #     self.mobile = self.detect_mobile(data)
-        
         if method is None:
-            # if self.mobile or not sg2_imported:
             method = "ephem"
-            # else: 
-            #     method = "sg2_static"
         
         if method in ["sg2", "sg2_static"] and not sg2_imported:
             print("sg2 was not sucessfully imported, using ephem")
             method = "ephem"
         
         
-        ##### guess which sg2 code to use
-        #####   mobile is never great for sg2, so add a warning to the user
+        ##### use sg2 static unless sg2 mobile is specified
         if method == "sg2":
-            # if self.mobile:
-            #     print("Warning: you are using sg2 on a mobile dataset, this is very slow")
-            #     print("use ephem or if it isnt a mobile dataset, pass mobile=False")
-            #     method = "sg2_mobile"
-            # else:
             method = "sg2_static"
-        
-        
         
         data = data.set_index("pc_time_end_measurement")
         data = data.replace({None:"nan"})
         data = data.astype(str)
         data = data.replace({"":"nan"})
         
-        float_cols = [col for col in data.columns if col != "dataseries_id"]
+        float_cols = [col for col in data.columns if col not in ["dataseries_id", "sample_id"]]
         data[float_cols] = data[float_cols].astype(float)
         
         gps_col_dict = {"default_latitude":"gps_latitude", 
@@ -255,7 +242,7 @@ class PreCalculations:
     def top_of_atmosphere_hi(self):
         """unpacks the top of atmosphere value from sg2"""
         toa = np.array(self.sun_data["toa_hi"])
-        ##### adjusted because hsr-1 only measures part of the spectrum
+        ##### adjusted because hsr1 only measures part of the spectrum
         return toa*(844/1367)
     
     def sun_earth_distance(self):
@@ -295,7 +282,7 @@ class PreCalculations:
     def airmass(self, df):
         data = pd.DataFrame()
         data["pressure"] = 1.01325
-        data["sza"] = np.degrees(self.precalculated_values["sza"])
+        data["sza"] = self.precalculated_values["sza"]
         daytimes = data["sza"] < 90
         data["airmass"] = np.nan
         data.loc[daytimes, "airmass"] = [HsrFunc.calc_air_mass(row[1]["sza"]) for row in data[daytimes].iterrows()]

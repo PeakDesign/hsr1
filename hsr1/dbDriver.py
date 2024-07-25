@@ -113,6 +113,26 @@ class DBDriver:
     def load_metadata(self, columns:[str]=[], condition:str="",
                       raise_on_missing=True) -> pd.DataFrame:
         return self.db_load.load_metadata(columns, condition, raise_on_missing)
+    
+    def load_spectrum(self, column:str, 
+             table:str=None,
+             start_time:str=None, 
+             end_time:str=None,
+             condition:str="",
+             raise_on_missing:bool=True,
+             sort:bool=True,
+             deserialise:bool=True,
+             timezone:str="+00:00"
+             ) -> pd.DataFrame:
+        return self.db_load.load(column,
+                                 table,
+                                 start_time,
+                                 end_time,
+                                 condition,
+                                 raise_on_missing,
+                                 sort,
+                                 deserialise,
+                                 timezone)
 
 
     def exists(self) -> bool:
@@ -128,7 +148,7 @@ class DBDriver:
             return False
     
     
-    def add_precalculated_values(self, method:str=None, mobile=True):
+    def add_precalculated_values(self, method:str=None, mobile=True, sample_ids_to_add=None, drop_existing=True):
         """calculates some commonly used values and stores them to the database
         
         params:
@@ -138,24 +158,31 @@ class DBDriver:
                 "sg2_mobile": slow, not reccomended, but works for a mobile dataset
                 "sg2": detects wether the dataset is mobile and uses the appropriate method
                 None(default): uses "sg2_static" if static, and ephem if mobile
+            mobile: wether or not the dataset's location will change. if you know 
+                it won't, you can pass mobile=False and calculations will be sped up
+            sample_ids_to_add(np.array): array of sample ids that correspond to 
+                the readings that precaclulated_values will be calculated for
+            drop_existing: deletes the existing data in the database. default true
+                as this function is usually used to recalculate a whole dataset.
+                To fill in a gap or recalculate a small section and keep the rest,
+                set this to False and pass in the sample ids you want to add
                 
         no returns, just updates the database with a new table
-        note: currently drops all precalculated values and calculates new ones,
-            so if this is taking a long time when adding to a large database, 
-            try storing to a smaller database, precalculating only the new values,
-            then merging into the main database
         """
         ref = reformat()
         
         deployment_metadata = self.load_metadata()
         
-        self.db_store.drop_table("precalculated_values")
+        if drop_existing:
+            self.db_store.drop_table("precalculated_values")
+        
         p_calcs = PreCalculations(deployment_metadata=deployment_metadata)
         spectral_data = self.db_load.load(["pc_time_end_measurement", "sample_id", "dataseries_id"])
+        
 
         data = None
         try:
-            data = self.db_load.load(p_calcs.requirements)
+            data = self.db_load.load(p_calcs.requirements+["sample_id"])
             print("loaded")
         except KeyError:
             data = pd.DataFrame()
@@ -166,11 +193,18 @@ class DBDriver:
             data["gps_latitude"] = deployment_metadata["default_latitude"].iloc[0]
             data["gps_altitude"] = deployment_metadata["default_elevation"].iloc[0]
         
+        
+        if sample_ids_to_add is not None:
+            select_data = data.set_index("sample_id")
+            data_to_calculate = select_data.loc[sample_ids_to_add, :]
+            data_to_calculate["sample_id"] = data_to_calculate.index
+            data = data_to_calculate.reset_index(drop=True)
+        
         precalculated_values = p_calcs.calculate_all(data, method)
         
         precalculated_values = reformat().reset_index(precalculated_values, "pc_time_end_measurement")
         precalculated_values["dataseries_id"] = spectral_data["dataseries_id"]
-        precalculated_values["sample_id"] = spectral_data["sample_id"]
+        precalculated_values["sample_id"]  = spectral_data["sample_id"]
         
         deployment_ids = {}
         timezones = {}
@@ -199,6 +233,7 @@ class DBDriver:
         
         print("storing precalculated values")
         self.db_store.store_dataframe(precalculated_values, "precalculated_values")
+    
     
     def make_gpx(self, filename:str):
         """make and save an .xml file

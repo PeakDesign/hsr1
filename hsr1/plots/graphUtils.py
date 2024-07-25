@@ -138,12 +138,14 @@ def plot_reference_lines_and_labels(axes, left_edge=0, reference_lines=None, ref
         reference_labels = [""]*len(reference_lines)
     
     
-    reference_lines = np.array(reference_lines)+0.5
     fancy_strings = []
     ##### add dashes if not epmpty string
     for j in range(len(reference_labels)):
         reference_labels[j] = reference_labels[j] +" - " if reference_labels[j] != "" else ""
         fancy_strings.append(reference_labels[j]+str(reference_lines[j]))
+    
+    ##### plus 0.5 so lines are in the middle of the pixel, not the bottom
+    reference_lines = np.array(reference_lines)+0.5
     for i in range(len(reference_lines)):
         axes.axhline(y=reference_lines[i], color="lightgray", linewidth=0.5, zorder=1.5)
 

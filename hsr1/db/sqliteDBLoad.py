@@ -266,8 +266,8 @@ class SqliteDBLoad():
                        sort:bool=True,
                        timezone:str="+00:00"
                        ) -> pd.DataFrame:
-        """runs load with table="accessory". more readable than using the parameter, as accessory cant be mixed with non accessory
-        
+        """runs load with table="accessory". more readable than using the parameter, 
+        as accessory cant be mixed with non accessory
         """
         table_names = self.load_table_names()
         
@@ -279,7 +279,56 @@ class SqliteDBLoad():
         
         return self.load(columns, "accessory_data", start_time, end_time, condition,
                          raise_on_missing, sort, True, timezone)
+    
+    
+    def load_spectrum(self, column,
+                      table:str=None, 
+                      start_time:str=None, 
+                      end_time:str=None,
+                      condition:str="",
+                      raise_on_missing:bool=True,
+                      sort:bool=True,
+                      timezone:str="+00:00"
+                      ) -> pd.DataFrame:
+        """loads a single spectrum from the database and returns it as a dataframe
         
+        params:
+            column: which column to load
+            table: which table to load data from. Not necessary but can be useful to specify when multiple tables have the same column
+            start_time, end_time: for only selecting data within a time period
+                format: ISO-8601("2023-05-23 00:00:00")
+                if you dont put in a full datetime, it will assume first timestamp,
+                    e.g: 2023-05-23 will be read as 2023-05-23 00:00:00.
+                    therefore, start_time is inclusive, end time is not
+            condition: sql that comes after the WHERE in an sql statement.
+                e.g: gobal_integral>50
+                if you want even more control, use load_sql
+            raise_on_missing: how to handle when columns arent found, raise or just load if possible
+            sort: sorts the results from the database
+            deserialise: wether or not to automatically deserialise spectral data
+            timezone: the timezone that all the data will be converted to
+        
+        returns:
+            one dataframe containing the spectral data in the requested column
+                columns = wavelengths values; 300-1100
+                index = time of measurement
+        """
+        if not isinstance(column, str):
+            raise TypeError("column must be a string. if you want to load multiple columns, call this function multiple times")
+        
+        data = self.load(["pc_time_end_measurement", column], table, start_time, end_time, condition,
+                         raise_on_missing, sort, timezone)
+        if len(data)>0:
+            if isinstance(data.loc[0, column], np.ndarray):
+                print("spectrum")
+                return pd.DataFrame(np.stack(data[column].values), index=data["pc_time_end_measurement"], columns=np.arange(300, 1101, 1))
+            else:
+                print("could not load spectrum, column was not a dataframe")
+        else:
+            print("could not load spectrum, no rows were returned from the dataframe")
+        
+        return pd.DataFrame()
+    
         
     def load_sql(self, sql:str) -> pd.DataFrame:
         """loads data from a database using an sql query from the user

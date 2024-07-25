@@ -7,6 +7,7 @@ this file is part of hsr1, which is distributed under the GNU Lesser General Pub
 import sqlite3
 import pandas as pd
 import numpy as np
+import time
 import os
 import uuid
 
@@ -32,9 +33,6 @@ class SqliteDBStore():
         
         driver = self.driver
         
-        # if driver.deployment_metadata_file_path is None:
-        #     raise ValueError("deployment metadata file is required to store to database")
-        
         ##### unpacking dfs from list
         spectral_data, system_data, deployment_metadata, *accessory_data_list = dfs
         accessory_data = accessory_data_list[0] if len(accessory_data_list) >= 1 else pd.DataFrame()
@@ -53,10 +51,6 @@ class SqliteDBStore():
             deployment_metadata["deployment_id"] = str(uuid.uuid1())
             deployment_metadata["dataseries_id"] = str(uuid.uuid1())
         
-        # TODO: should iloc[0] be here?
-        ##### only will cause an issue if multiple dataseries are being stored at once.
-        #####   with the normal txt-db pipeline this will never happen
-        #####   but users may try to hand store data
         spectral_data, system_data, accessory_data = self.__add_dataseries_ids(deployment_metadata["dataseries_id"].iloc[0], 
                                                                                spectral_data, system_data, accessory_data)
         
@@ -113,9 +107,10 @@ class SqliteDBStore():
             mobile = False
             if deployment_metadata.loc[len(deployment_metadata)-1, "mobile"] == "1":
                 mobile = True
-            driver.add_precalculated_values(mobile=mobile)
-    
-    
+            
+            start_time = time.perf_counter()
+            driver.add_precalculated_values(mobile=mobile, sample_ids_to_add=spectral_data["sample_id"].values, drop_existing=False)
+            print("time to precalculate: ", time.perf_counter()-start_time)
     
     
         
