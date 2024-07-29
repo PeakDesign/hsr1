@@ -69,6 +69,11 @@ class Graph:
             timezone: the desired timezone of the data, if loading from a database
             dpi: dots per inch, pixel resolution of the data
             **kwargs: keyword argurments to pass to load()
+        
+        this contains many examples of how the underlying graph classes in hsr1.plots
+        can be used. there are combined plots with several similar graphs,
+        some functions that provide a simple wrapper around a class, and some that
+        load data, do some data processing, and then use one of the plots from hsr1.plots
         """
         self.driver = driver
         self.dataframe = dataframe
@@ -366,7 +371,20 @@ class Graph:
         
     
     
-    def plot_elv_azi(self, column:str, **kwargs):
+    def plot_elv_azi(self, column:str):
+        """plots a graph of elevation against azimuth, with the colour representing
+        the largest of a given value measured with each pair of elevation and azimuth values.
+        
+        currently data from accessory_datadoes not work, only data from 
+            spectral_data, system_data, and precalculated_values works.
+        
+        params:
+            column: the column that will be represented by the colourmap
+        """
+        # TODO: make accessory_data work
+        # truncate dosent work, assumes 1min data
+        # use code from reformat_data? 
+        
         data = self.dataframe.copy()
         if np.logical_not(np.isin([column], data.columns)).any():
             print("loading data from the database")

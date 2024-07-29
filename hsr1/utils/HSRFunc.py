@@ -16,13 +16,13 @@ import ephem
 import scipy.interpolate as interpolate
 import zipfile
 
-# Program to load hsr1 Raw text datafiles. Caches them to HDF
 
 
 def calc_direct_normal_spectrum(global_spectrum, diffuse_spectrum, sza):
     """calculates the direct normal spectrum from the diffuse, global and zenith angle
     params:
-        global_spectrum, diffuse_spectrum: pandas Series of numpy arrays, each array representing one spectral reading
+        global_spectrum, diffuse_spectrum: either pandas Series of numpy arrays, each array representing one spectral reading
+                                                  or dataframe with one row per wavelength reading
         sza: pandas Series one float(radians) per reading
     """
     direct_horizontal_spectrum = global_spectrum-diffuse_spectrum
@@ -34,6 +34,12 @@ def calc_direct_normal_spectrum(global_spectrum, diffuse_spectrum, sza):
 def calc_sun_zenith(ts, lat, lon):
     """calculates the solar zenith angle at a specific time and location
     quite slow as this has to be run in a for loop, sg2's calculation is much faster
+    params:
+        ts: timestamp that you want to measure, string yyyy-mm-dd hh:mm:ss
+        lat, lon: latitude and longitude of the location
+    
+    returns:
+        tuple of zenith angle and azimuth, in radians
     """
     obs = ephem.Observer()
     sun = ephem.Sun()
@@ -43,10 +49,10 @@ def calc_sun_zenith(ts, lat, lon):
 
     sun.compute(obs)
 
-    return 90 - (sun.alt * 180. / np.pi), sun.az * 180. / np.pi
+    return np.pi/2 - sun.alt, sun.az
 
 def calc_rayleigh(wl, pressure = 1013.25):
-    """calculates the rayleigh scattering for one reading
+    """calculates the rayleigh scattering
     params:
         wl: the wavelength(s) to calculate the scattering over.
             this can be a scalar, numpy array or pandas series
@@ -62,7 +68,7 @@ def calc_rayleigh(wl, pressure = 1013.25):
     tau_r = (pressure/p0)*(1/(a1*wl**4 + a2*wl**2 + a3 + a4/wl**2))
     return tau_r
 
-def calc_air_mass(Sza, pressure = 1013.25):
+def calc_air_mass(Sza, pressure=1013.25):
     """calculates the airmass
     params:
         Sza: the solar zenith angle in radians.
@@ -92,7 +98,7 @@ def calc_aot_direct(ed, eds, sza, e_solar=None, sed=None, aod_type=["total_od", 
         
     
     returns:
-        aod_data: dataframe containing all the requested channels
+        aod_data: dataframe containing all the requested aod_types
         to convert a column of numpy arrays into a dataframe of wavelengths against time:
             pd.DataFrame(np.stack(data["spectrum_column"].values), columns = np.arange(300, 1101, 1), index=data["pc_time_end_measurement"])
     
@@ -172,8 +178,8 @@ def calc_aot_direct(ed, eds, sza, e_solar=None, sed=None, aod_type=["total_od", 
     return aod_data
 
 
-def calc_cimel_band_aot_direct(Ed, Eds, Sza, E_solar, sed, aod_type=["total_od", "aod_microtops", "aod_wood_2017"]) :
-    """reduce wavelength range to the cimel measurement bands, and calculate AOTs
+def calc_cimel_band_aot_direct(Ed, Eds, Sza, E_solar, sed, aod_type=["total_od", "aod_microtops", "aod_wood_2017"]):
+    """calculates the AOD values at several wavelengths, that are also measured by cimel instruments
     
     params:
         ed: the global spectral irradiance. columns=wavelength, index=time, timestamp in utc
@@ -230,7 +236,8 @@ def calc_aod_from_df(data, cimel=False, aod_type=["total_od", "aod_microtops", "
                                                              "global_spectrum", "diffuse_spectrum",
                                                              "sza", "sed"]
         cimel: if True, calculates the aod only at certain wavelengths that cimel instruments measure at
-        aod_type
+        aod_type: the desired outputs string or list of strings
+        wavelengths: filters the wavlengths that are used for the caluclation, and that are returned
     """
     utctime = pd.to_datetime(data["pc_time_end_measurement"]).dt.tz_localize(None)
     
@@ -255,11 +262,12 @@ def calc_aod_from_df(data, cimel=False, aod_type=["total_od", "aod_microtops", "
     return aod_data
 
 def load_et_spectrum(filepath=None, wavelengths=None):
-    """loads a .txt file containing a reference extraterrestrial solar spectrum
+    """loads a .txt file containing a reference extraterrestrial solar spectrum, and applies some smoothing
     params:
         filepath: filepath to the file where the spectrum is stored. if None, 
             a default spectrum that comes with the library is used
         wavelengths: which wavelengths to use from the reference file
+    returns a dataframe with one row which contains the reference spectrum
     """
     
     if wavelengths is None:
@@ -330,6 +338,7 @@ def calculate_clearsky_filter(data:pd.DataFrame, global_spectrum=None, diffuse_s
         data: the data that is used for the clearsky calculation
         method: the method that iwll be used to calculate which readings are clearsky readings
         kwargs: the keyword arguments to pass to clearsky_filter
+    returns a numpy array the same length as input dataframe with ones and zeros, 1=clearsky 0=cloud
     """
     if method is None:
         return np.ones(len(data)).astype(bool)

@@ -249,14 +249,19 @@ class SqliteDBLoad():
         
         params: 
             columns: list of columns that you want to load, they are in the format:
-                "channel_0", "channel_1" etc
+                "channel_0", "channel_1" etc.
+                if [], all columns are loaded
             start_time, end_time: for only selecting data within a time period
                 format: ISO-8601("2023-05-23 00:00:00")
                 if you dont put in a full datetime, it will assume first timestamp,
                     e.g: 2023-05-23 will be read as 2023-05-23 00:00:00.
                     therefore, start_time is inclusive, end time is not
+        returns:
+            a dataframe with the requested data. pc_time_end_measurement is automatically added as a column
+            columns = pc_time_end_measurement, requested_channel_0, requested_channel_1
+            if only one column is requested, it is returned as one unpacked dataframe, index=time, columns=wavelength
         """
-        
+        parameter_columns = columns
         if columns == []:
             columns = self.load_table_names()
             
@@ -268,6 +273,9 @@ class SqliteDBLoad():
         
         if not os.path.isfile(self.db_name):
             raise ValueError(f"database '{self.db_name}' does not exist")
+        
+        if "pc_time_end_measurement" not in columns:
+            columns = ["pc_time_end_measurement"]+columns
         
         time_col = "pc_time_end_measurement"
         
@@ -290,9 +298,13 @@ class SqliteDBLoad():
         
         result.columns = columns
         
-        
         ser = Serialisation("numpy")
         result = ser.decode_dataframe(result, columns[1:])
+        
+        if len(parameter_columns) == 1:
+            result = pd.DataFrame(np.stack(result[parameter_columns[0]]), 
+                                  index=result["pc_time_end_measurement"], 
+                                  columns=np.arange(300, 1101))
         
         return result
     

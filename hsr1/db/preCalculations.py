@@ -25,20 +25,12 @@ import hsr1.utils.HSRFunc as HsrFunc
 
 class PreCalculations:
     def __init__(self, deployment_metadata):
-        # self.mobile = mobile
-        # self.mobile_threshold = mobile_threshold
         self.deployment_metadata=deployment_metadata
         
         self.requirements = ["gps_longitude", "gps_latitude", "gps_altitude", "pressure", "baro_temp", "pc_time_end_measurement", "dataseries_id"]
         self.sun_data = None
         self.sg2_values = ["topoc.gamma_S0", "topoc.alpha_S", "topoc.toa_hi", "geoc.R"]
     
-    
-    # def detect_mobile(self, data):
-    #     lon_range = data["gps_longitude"].max()-data["gps_longitude"].min()
-    #     lat_range = data["gps_latitude"].max()-data["gps_latitude"].min()
-        
-    #     return lon_range > self.mobile_threshold or lat_range > self.mobile_threshold
     
     
     

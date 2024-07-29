@@ -68,6 +68,12 @@ class DBDriver:
     def store(self, dfs:tuple, precalculate:bool=True):
         self.db_store.store(dfs, precalculate)
     
+    def combine_database(self, new_db_name:str):
+        self.db_store.combine_database(new_db_name)
+    
+    def combine_database_folder(self, folder, delete=False):
+        self.db_store.combine_database_folder(folder, delete)
+    
     def store_raw(self, dfs, deployment_metadata):
         self.db_store.store_raw(dfs, deployment_metadata)
     
@@ -136,7 +142,7 @@ class DBDriver:
                                           sort,
                                           timezone)
     
-    def load_raw(self, columns, start_time, end_time):
+    def load_raw(self, columns=[], start_time=None, end_time=None):
         return self.db_load.load_raw(columns, start_time, end_time)
 
 
