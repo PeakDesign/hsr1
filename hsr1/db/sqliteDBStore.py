@@ -11,7 +11,7 @@ import time
 import os
 import uuid
 
-from hsr1.db import SqliteDBLoad
+import hsr1
 
 class SqliteDBStore():
     def __init__(self, driver):
@@ -44,7 +44,7 @@ class SqliteDBStore():
         # TODO: more thorough check if db exists
         ##### checks if appending to a database or making new one, and if it already exists, checks to see if its the same deployment
         if driver.exists():
-            db_load = SqliteDBLoad(self.db_name)
+            db_load = hsr1.db.SqliteDBLoad(self.db_name)
             deployment_metadata = self.match_deployment_ids(deployment_metadata, db_load)
             deployment_metadata = self.match_dataseries_ids(deployment_metadata, db_load)
         else:
@@ -57,7 +57,7 @@ class SqliteDBStore():
         
         ##### only add new data values
         if driver.exists():
-            db_load = SqliteDBLoad(self.db_name)
+            db_load = hsr1.db.SqliteDBLoad(self.db_name)
             table_names = db_load.load_table_names()
             if "deployment_metadata" in table_names.keys() and "spectral_data" in table_names.keys() and "system_data" in table_names.keys():
                 ##### generate a dictionary that matches dataseries id to deployment id
@@ -113,6 +113,48 @@ class SqliteDBStore():
             print("time to precalculate: ", time.perf_counter()-start_time)
     
     
+    def store_raw(self, dfs, deployment_metadata):
+        """stores raw data to the database
+        
+        params:
+            dfs: tuple of dataframes, one dataframe per channel
+            deployment_metadata: dataframe with one row, containing the deployment metadata for the dataseries being stored
+        
+        if no raw data already exists, creates a new table, "raw_data" which stores spectral data like in the spectral_data
+        table, with each reading containing a blob that can be decoded to a spectral array
+        """
+        table_names = ["channel_"+str(i) for i in range(len(dfs))]
+        
+        big_df = pd.DataFrame()
+        for i, df in enumerate(dfs):
+            channel = pd.DataFrame(hsr1.db.Serialisation.listify_and_serialise_numpy(df), columns=[table_names[i]])
+            channel = channel.reset_index()
+            channel.columns = ["pc_time_end_measurement", table_names[i]]
+            channel["pc_time_end_measurement"] = channel["pc_time_end_measurement"].astype(str)
+            if len(big_df) == 0:
+                big_df = channel
+            else:
+                big_df = big_df.merge(channel, on="pc_time_end_measurement")
+        
+        
+        store = SqliteDBStore(self.driver)
+        
+        deployment_metadata = deployment_metadata.reset_index(drop=True)
+        
+        # TODO: more thorough check if db exists
+        ##### checks if appending to a database or making new one, and if it already exists, checks to see if its the same deployment
+        if self.driver.exists():
+            db_load = self.driver.db_load
+            store = SqliteDBStore(self.driver)
+            deployment_metadata = store.match_deployment_ids(deployment_metadata, db_load)
+            deployment_metadata = store.match_dataseries_ids(deployment_metadata, db_load)
+        else:
+            deployment_metadata["deployment_id"] = str(uuid.uuid1())
+            deployment_metadata["dataseries_id"] = str(uuid.uuid1())
+        
+        store.store_dataframe(deployment_metadata, "deployment_metadata")
+        store.store_dataframe(big_df, "raw_data") 
+    
         
         
 
@@ -129,7 +171,7 @@ class SqliteDBStore():
         
         
         ##### avoid loading duplicates
-        new_load = SqliteDBLoad(new_db_name)
+        new_load = hsr1.db.SqliteDBLoad(new_db_name)
         
         new_metadata = new_load.load_metadata()
         metadata_to_store = new_metadata
@@ -137,7 +179,7 @@ class SqliteDBStore():
         non_match_index_normal = None
         non_match_index_accessory = None
         
-        existing_load = SqliteDBLoad(self.db_name)
+        existing_load = hsr1.db.SqliteDBLoad(self.db_name)
         
         new_tables = new_load.load_table_names()
         existing_tables = existing_load.load_table_names().keys()
@@ -223,7 +265,7 @@ class SqliteDBStore():
         cur.execute("ATTACH \"" +new_db_name+"\"AS new_db")
         cur.execute("PRAGMA database_list;")
         
-        new_load = SqliteDBLoad(new_db_name)
+        new_load = hsr1.db.SqliteDBLoad(new_db_name)
         table_names = new_load.load_table_names()
         
         for table_name in table_names.keys():

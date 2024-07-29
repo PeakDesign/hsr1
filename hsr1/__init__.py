@@ -6,7 +6,6 @@ this file is part of hsr1, which is distributed under the GNU Lesser General Pub
 
 from hsr1.dbDriver import DBDriver
 from hsr1.graph import Graph
-from hsr1.rawDbDriver import RawDbDriver
 
 import hsr1.synthetic_dataset
 import hsr1.read_txt

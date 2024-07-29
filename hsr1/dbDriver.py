@@ -68,6 +68,9 @@ class DBDriver:
     def store(self, dfs:tuple, precalculate:bool=True):
         self.db_store.store(dfs, precalculate)
     
+    def store_raw(self, dfs, deployment_metadata):
+        self.db_store.store_raw(dfs, deployment_metadata)
+    
     def load_table_names(self) -> pd.DataFrame:
         return self.db_load.load_table_names()
     
@@ -132,6 +135,9 @@ class DBDriver:
                                           raise_on_missing,
                                           sort,
                                           timezone)
+    
+    def load_raw(self, columns, start_time, end_time):
+        return self.db_load.load_raw(columns, start_time, end_time)
 
 
     def exists(self) -> bool:

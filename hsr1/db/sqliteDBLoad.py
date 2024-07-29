@@ -242,6 +242,60 @@ class SqliteDBLoad():
         return result
     
     
+    def load_raw(self, columns:[str]=[], 
+                 start_time=None, 
+                 end_time=None):
+        """loads the raw data from the raw_data table
+        
+        params: 
+            columns: list of columns that you want to load, they are in the format:
+                "channel_0", "channel_1" etc
+            start_time, end_time: for only selecting data within a time period
+                format: ISO-8601("2023-05-23 00:00:00")
+                if you dont put in a full datetime, it will assume first timestamp,
+                    e.g: 2023-05-23 will be read as 2023-05-23 00:00:00.
+                    therefore, start_time is inclusive, end time is not
+        """
+        
+        if columns == []:
+            columns = self.load_table_names()
+            
+            if not "raw_data" in columns:
+                raise ValueError("this database dosent have raw_data")
+            
+            columns = columns["raw_data"]
+        
+        
+        if not os.path.isfile(self.db_name):
+            raise ValueError(f"database '{self.db_name}' does not exist")
+        
+        time_col = "pc_time_end_measurement"
+        
+        time_condition = " WHERE "
+        if start_time != None:
+            times_after = time_col+" > \""+str(start_time)+"\" and "
+            time_condition += times_after
+        
+        if end_time != None:
+            times_before =  time_col+" < \""+str(end_time)+"\" and "
+            time_condition += times_before
+        
+        if time_condition == " WHERE ":
+            time_condition = ""
+        
+        sql = "SELECT "+", ".join(columns)+" FROM raw_data" + time_condition
+        
+        load = SqliteDBLoad(self.db_name)
+        result = load.load_sql(sql)
+        
+        result.columns = columns
+        
+        
+        ser = Serialisation("numpy")
+        result = ser.decode_dataframe(result, columns[1:])
+        
+        return result
+    
     
     def load_metadata(self, columns:[str]=[], 
                       condition:str="", 

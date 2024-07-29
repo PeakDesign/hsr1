@@ -254,13 +254,17 @@ def calc_aod_from_df(data, cimel=False, aod_type=["total_od", "aod_microtops", "
     
     return aod_data
 
-def load_et_spectrum(filepath=None, wavelengths=np.arange(300, 1101)):
+def load_et_spectrum(filepath=None, wavelengths=None):
     """loads a .txt file containing a reference extraterrestrial solar spectrum
     params:
         filepath: filepath to the file where the spectrum is stored. if None, 
             a default spectrum that comes with the library is used
         wavelengths: which wavelengths to use from the reference file
     """
+    
+    if wavelengths is None:
+        wavelengths = np.arange(300, 1101)
+    
     if filepath is None:
         res = importlib_resources.files("hsr1.data").joinpath("SolarSpectrum.txt")
         file = importlib_resources.as_file(res)

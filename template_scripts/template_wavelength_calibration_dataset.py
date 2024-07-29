@@ -3,14 +3,12 @@
 import hsr1
 
 
-db_name = "database/to/be/calibrated"
+db_name = "location/of/the/database.db"
+output_loc = "where/to/store/the/output.txt"
+calibration_file = "location/of/the/existing/calibration.txt"
 
-output_loc = "calibrations/new_calibration.txt"
-
-calibration_file = "exsisting/calibration/file.txt"
-
-raw_driver = hsr1.RawDbDriver(db_name)
-raw_data = raw_driver.load()
+db = hsr1.DBDriver(db_name)
+raw_data = db.load_raw()
 
 dataset = hsr1.utils.spectrum.RawDataset(raw_data, calibrations_filepath=calibration_file, spectrum_type="wavelength")
 

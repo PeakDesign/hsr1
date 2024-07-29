@@ -105,7 +105,7 @@ def read_raw_txt(hsr_path="", start_date="2000-01-01", end_date="2100-01-01", de
             should be in the format YYYY-MM-DD
         deployment_metadata_filepath: the filepath to the deployment metadata .ini file that will be read
     
-    returns a tuple of dataframes that can be used with rawDBDriver.store to make a raw dataset
+    returns a tuple of dataframes that can be used with DBDriver.store_raw to make a raw dataset
     """
     if deployment_metadata_filepath is None:
         raise ValueError("a deployment_metadata_filepath must be passed")

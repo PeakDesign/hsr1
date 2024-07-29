@@ -17,13 +17,10 @@ diffuse_spectrum = db.load_spectrum("diffuse_spectrum")
 # only the aod_microtops will be plotted
 aod_type = "aod_microtops"
 
-# loads the reference solar spectrum, above the atmosphere
-e_solar = hsr1.utils.HsrFunc.load_et_spectrum()
-
 # calculates the aod values that will be plotted.
 aod_data = hsr1.utils.HsrFunc.calc_aot_direct(global_spectrum, diffuse_spectrum, 
                                               pd.DataFrame(data["sza"]), 
-                                              e_solar, sed=data["sed"], aod_type=aod_type)
+                                              sed=data["sed"], aod_type=aod_type)
 
 # these are the wavelengths that will be plotted
 wavelengths = np.array([380, 440, 500, 675, 870, 1020])

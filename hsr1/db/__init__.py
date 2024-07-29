@@ -8,5 +8,3 @@ from hsr1.db.preCalculations import PreCalculations
 from hsr1.db.serialisation import Serialisation
 from hsr1.db.sqliteDBLoad import SqliteDBLoad
 from hsr1.db.sqliteDBStore import SqliteDBStore
-from hsr1.db.sqliteLoadRaw import SqliteLoadRaw
-from hsr1.db.sqliteStoreRaw import SqliteStoreRaw
