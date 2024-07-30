@@ -171,23 +171,11 @@ def generate_metadata_string(deployment_metadata, data=None):
     #### make a dict of name: value pairs
     metadata = {}
     
-    ##### use deployment metadata if available, then accessory_data, then gps_data
     metadata["lat"] = deployment_metadata['default_latitude'][0]
-    # if metadata["lat"] == "''":
-    #     if "Latitude" in data.columns:
-    #         metadata["lat"] = str(round(data["Latitude"].to_numpy()[0], 2))
-    #     elif "gps_latitude" in data.columns:
-    #         metadata["lat"] = str(round(data["gps_latitude"].to_numpy()[0], 2))
-            
     metadata["lon"] = deployment_metadata['default_longitude'][0]
-    # if metadata["lon"] == "''":
-    #     if "Longitude" in data.columns:
-    #         metadata["lon"] = str(round(data["Longitude"].to_numpy()[0], 2))
-    #     elif "gps_longitude" in data.columns:
-    #         metadata["lon"] = str(round(data["gps_longitude"].to_numpy()[0], 2))
     
     if data is not None:
-        metadata["period"] = str(data.loc[0, "pc_time_end_measurement"].date()) + " - " + str(data.loc[len(data)-1, "pc_time_end_measurement"].date())
+        metadata["period"] = str(data.iloc[0]["pc_time_end_measurement"].date()) + " - " + str(data.iloc[len(data)-1]["pc_time_end_measurement"].date())
         metadata["total readings"] = str(len(data))
     
     ##### convert dict to string

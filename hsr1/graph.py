@@ -368,6 +368,7 @@ class Graph:
         td.fig = fig
         td.time_day_graph(data, axes, "pc_time_end_measurement", column, 
                           stack_resolution=stack_resolution)
+        axes.set_ylabel(column)
         
     
     
@@ -453,7 +454,7 @@ class Graph:
             
             fig = plt.figure(figsize=(11.7, 8.3))
             
-            this_title = title + "Spectral data on "+day.strftime("%Y-%m-%d")
+            this_title = title + "Spectral AOD data on "+day.strftime("%Y-%m-%d")
             fig.suptitle(this_title)
             
             axes = fig.subplots(4)

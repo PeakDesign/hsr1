@@ -225,9 +225,9 @@ class SqliteDBLoad():
         
         if deserialise:
             ser = Serialisation("numpy")
-            if "global_spectrum" in columns:
+            if "global_spectrum" in output_columns:
                 result = ser.decode_dataframe(result, ["global_spectrum"])
-            if "diffuse_spectrum" in columns:
+            if "diffuse_spectrum" in output_columns:
                 result = ser.decode_dataframe(result, ["diffuse_spectrum"])
         
         

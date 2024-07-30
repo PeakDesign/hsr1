@@ -236,8 +236,7 @@ class ClearnessDensityGraph:
         new_df["diff/ghi"] = new_df["diffuse_integral"]/new_df["global_integral"]
         new_df["deg_sza"] = np.degrees(new_df["sza"])
         
-        highest_angle = min(new_df["deg_sza"])
-        axes_range = [[highest_angle, 90], [0, 1.4]]
+        axes_range = [[0, 90], [0, 1.4]]
         
         axes.plot(np.degrees(self.limits["SZA"]), self.limits["diff/ghi_sza_comparison"], color="black")
         

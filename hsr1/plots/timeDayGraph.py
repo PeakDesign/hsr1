@@ -91,16 +91,9 @@ class TimeDayGraph:
         pixel_hours = np.linspace(0, 24, pixels_to_use, endpoint=False)
         measured_hours = np.array(new_df.index)
         
-        # #### find the difference between each reading and each group
-        # differences = measured_hours[:, np.newaxis] - pixel_hours[np.newaxis, :]
-        # differences = np.abs(differences)
-        
         # ##### finds the closest pixel to each reading's true value
-        # closest_pixel_hour = pixel_hours[np.argmin(differences, 1)]
         def closest_pixel_hour(i):
             return pixel_hours[np.argmin(np.abs(pixel_hours-i))]
-        
-        
         
         ##### groups all the readings into one pixel groups, according to the
         #####   stack_resolution parameter
