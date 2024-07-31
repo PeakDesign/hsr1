@@ -485,6 +485,9 @@ class SqliteDBStore():
             ##### if there is no data in the database for this table, no need to check for dupes, just return original data
             return data
         
+        if data is None:
+            return None
+        
         new_values = data[["pc_time_end_measurement", "dataseries_id"]].copy()
         new_values["pc_time_end_measurement"] = pd.to_datetime(new_values["pc_time_end_measurement"]).dt.tz_convert("+00:00")
         

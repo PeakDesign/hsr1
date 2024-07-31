@@ -19,7 +19,7 @@ class Config:
             config: a dictionary of all the fields in the relevant section
         """
         if not os.path.isfile(self.filepath):
-            raise Exception(f"config file \"{self.filepath}\" not found")
+            raise FileNotFoundError(f"config file \"{self.filepath}\" not found")
         
         parser = ConfigParser()
         parser.read(self.filepath)

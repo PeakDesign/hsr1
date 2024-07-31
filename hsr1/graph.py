@@ -314,7 +314,9 @@ class Graph:
         dh.plot_hists(columns, "Currents", ignore_zero=False)
     
     
-    
+    """---------
+    custom plots
+    --------"""
     
     def biggest_dips(self, n=15, cutoff_angle=np.radians(80), cutoff_wavelength=1000,
                       date_format:str="%y-%m-%d %H:%M",

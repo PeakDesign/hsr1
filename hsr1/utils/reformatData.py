@@ -120,9 +120,9 @@ class ReformatData():
         summary:pd.DataFrame = dataframes[2]
         
         # round times to the nearest minute
-        ed = self.__round_times(ed, "min")
-        eds = self.__round_times(eds, "min")
-        summary = self.__round_times(summary, "min")
+        # ed = self.__round_times(ed, "min")
+        # eds = self.__round_times(eds, "min")
+        # summary = self.__round_times(summary, "min")
         
         # select all the rows in the dataframe that are not duplicates
         ed = ed[~ed.index.duplicated()]
