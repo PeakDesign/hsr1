@@ -147,7 +147,8 @@ def plot_reference_lines_and_labels(axes, left_edge=0, reference_lines=None, ref
     ##### plus 0.5 so lines are in the middle of the pixel, not the bottom
     reference_lines = np.array(reference_lines)+0.5
     for i in range(len(reference_lines)):
-        axes.axhline(y=reference_lines[i], color="lightgray", linewidth=0.5, zorder=1.5)
+        axes.axhline(y=reference_lines[i], color="black", linewidth=0.4)
+        axes.axhline(y=reference_lines[i], color="lightgray", linewidth=0.3)
 
     axes.set_yticks(reference_lines, fancy_strings)
     axes.tick_params(axis='y', which='major', labelsize=10)
