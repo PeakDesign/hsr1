@@ -5,7 +5,7 @@ this file is part of hsr1, which is distributed under the GNU Lesser General Pub
 """
 import uuid
 import os
-import importlib_resources
+import importlib
 
 import numpy as np
 import pandas as pd
@@ -257,8 +257,8 @@ class SyntheticDataset():
     
     def smarts_integral_data(self, timeseries, filepath=None):
         if filepath is None:
-            res = importlib_resources.files("hsr1.data").joinpath("smarts.txt")
-            file = importlib_resources.as_file(res)
+            res = importlib.resources.files("hsr1.data").joinpath("smarts.txt")
+            file = importlib.resources.as_file(res)
             with file as f:
                 filepath = f
         

@@ -17,8 +17,7 @@ dependencies = [
     "scipy>=1.10",
     "lmfit>=1.1",
     "ephem>=4.1",
-    "pvlib>=0.10",
-    "importlib_resources>=5.0"
+    "pvlib>=0.10"
 ]
 
 

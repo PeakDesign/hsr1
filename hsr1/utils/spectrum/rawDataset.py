@@ -3,7 +3,7 @@
 copyright 2024 Peak Design
 this file is part of hsr1, which is distributed under the GNU Lesser General Public License v3 (LGPL)
 """
-import importlib_resources
+import importlib
 
 import numpy as np
 import pandas as pd
@@ -133,8 +133,8 @@ class RawDataset:
             kwargs: arguments to pass to each channel's find_calibration method, cleaner than having all arguments as parameters here
         """
         if reference_filepath is None:
-            res = importlib_resources.files("hsr1.data").joinpath("smarts.txt")
-            file = importlib_resources.as_file(res)
+            res = importlib.resources.files("hsr1.data").joinpath("smarts.txt")
+            file = importlib.resources.as_file(res)
             with file as f:
                 reference_filepath = f
             

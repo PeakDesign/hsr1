@@ -7,7 +7,6 @@ import math
 from datetime import datetime
 from pathlib import Path
 import time
-import importlib_resources
 
 import numpy as np
 import matplotlib.pyplot as plt
