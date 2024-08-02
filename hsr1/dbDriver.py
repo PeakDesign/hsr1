@@ -194,7 +194,6 @@ class DBDriver:
         data = None
         try:
             data = self.db_load.load(p_calcs.requirements+["sample_id"])
-            print("loaded")
         except KeyError:
             data = pd.DataFrame()
             data["pc_time_end_measurement"] = spectral_data["pc_time_end_measurement"]

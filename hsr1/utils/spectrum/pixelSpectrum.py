@@ -109,12 +109,12 @@ class PixelSpectrum:
             
             if plot:
                 plt.plot(indecies)
-                plt.show()
+                plt.show(block=False)
                 plt.plot(corresponding_pixels)
-                plt.show()
+                plt.show(block=False)
                 plt.plot(spectrum)
                 plt.plot(result)
-                plt.show()
+                plt.show(block=False)
             
             output_shape = [output_shape[0]+1200, output_shape[1]+1200]
             return result[output_shape[0]:output_shape[1]]

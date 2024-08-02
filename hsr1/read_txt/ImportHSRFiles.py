@@ -3,6 +3,7 @@
 copyright 2024 Peak Design
 this file is part of hsr1, which is distributed under the GNU Lesser General Public License v3 (LGPL)
 """
+import warnings
 import datetime
 import os, io
 import numpy as np
@@ -13,6 +14,9 @@ import datetime as dt
 import zipfile 
 
 import ephem
+
+##### supressing pandas performance warnings
+warnings.simplefilter(action='ignore', category=pd.errors.DtypeWarning)
 
 def calc_sun_zenith_azimuth(ts, lat, lon):
     obs = ephem.Observer()
@@ -242,15 +246,15 @@ if __name__ == '__main__':
     # broken = open_gps_file(hsr_path, hsr_date)
     """
 
-    hsr_path='D:\DOCUMENT\BF4 Spectral\SolarSpectrumLogging\HSR1-002\PMLQuest 2021' # path to directory containing all the hsr .txt files
-    hsr_date='2021-08-03'    # 
-    lat = 50.37
-    lon = -4.13
-    Ed = open_hsr_file(hsr_path, hsr_date, 'Total.txt')
-    #Eds = open_hsr_file(hsr_path, hsr_date, 'Diffuse.txt')
-    Summary = open_hsr_file(hsr_path, hsr_date, 'Summary.txt')
+    # hsr_path='D:\DOCUMENT\BF4 Spectral\SolarSpectrumLogging\HSR1-002\PMLQuest 2021' # path to directory containing all the hsr .txt files
+    # hsr_date='2021-08-03'    # 
+    # lat = 50.37
+    # lon = -4.13
+    # Ed = open_hsr_file(hsr_path, hsr_date, 'Total.txt')
+    # #Eds = open_hsr_file(hsr_path, hsr_date, 'Diffuse.txt')
+    # Summary = open_hsr_file(hsr_path, hsr_date, 'Summary.txt')
     
-    time_WL_plot2(Ed, 'Ed only')
+    # time_WL_plot2(Ed, 'Ed only')
     """
     hsr_path='D:\DOCUMENT\BF4 Spectral\SolarSpectrumLogging\HSR1-001\Winster 2021' # path to directory containing all the hsr .txt files
     hsr_date='2021-09-21'

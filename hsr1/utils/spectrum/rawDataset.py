@@ -83,7 +83,7 @@ class RawDataset:
         plt.xlabel("pixels")
         plt.ylabel("wavelength")
         plt.legend()
-        plt.show()
+        plt.show(block=False)
     
     def plot_calibration_wide(self, polys, names=None, title=""):
         """plots a line graph of pixel against wavelength for each channel
@@ -104,7 +104,7 @@ class RawDataset:
         plt.axvline(1200)
         plt.suptitle(title)
         plt.legend()
-        plt.show()
+        plt.show(block=False)
     
     def plot_all_errors(self, polys, dips, names):
         plt.figure(figsize=(20, 10))
@@ -116,7 +116,7 @@ class RawDataset:
             plt.plot(ref, error-(i/50), label=name)
         
         plt.legend()
-        plt.show()
+        plt.show(block=False)
     
     
     def find_all_calibrations(self, file_output=None, 

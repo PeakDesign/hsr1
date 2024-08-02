@@ -269,6 +269,7 @@ class DailyHists:
                     if tick <= -linthresh:
                         prefix = "-"
                         _tick = -tick
+                        
                     power = math.log(_tick, base)
                     labels.append(prefix+str(base)+graphUtils.superscript(int(round(power))))
                 else:

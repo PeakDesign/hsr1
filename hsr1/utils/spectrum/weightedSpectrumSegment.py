@@ -53,7 +53,7 @@ class WeightedSpectrumSegment:
         plt.axvline(self.centre+self.distance, c="gray")
         plt.axvline(self.centre-self.distance, c="gray")
         plt.legend()
-        plt.show()
+        plt.show(block=False)
         
     
     def find_best_calibration(self, c0_init, c1_init, 

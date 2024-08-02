@@ -16,6 +16,9 @@ import hsr1.utils.spectrum.spectrumUtils as SpectrumUtils
 
 
 class LinearDipsGraph:
+    def __init__(self, block=True):
+        self.block = block
+    
     def plot_n_biggest_dips(self, global_spectrum, 
                             n=15,
                             cutoff_wavelength=1000,
@@ -67,20 +70,12 @@ class LinearDipsGraph:
         axes.set_xticks(x_ticks, x_labels)
         
         
-        # x_axis_timestamp = pd.to_datetime(x_axis.to_numpy())
-        # xticks = x_axis_timestamp[x_axis_timestamp.minute == 0].unique()
-        
-        
-        # xlabels = [label.hour for label in xticks]
-        
-        # axes.set_xticks(xticks.astype("int64"), xlabels)
-        
         axes.set_xlim(xlims)
         axes.set_ylim((300, cutoff_wavelength))
         
         graphUtils.plot_reference_lines_and_labels(axes, xlims[0])
         
-        plt.show()        
+        plt.show(block=self.block)        
         
     
     

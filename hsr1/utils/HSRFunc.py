@@ -83,7 +83,8 @@ def calc_air_mass(Sza, pressure=1013.25):
     c = 1.6364
     C = np.cos(Sza)
     
-    mu = C + a*(b - np.degrees(Sza))**(-c) # atm. air mass (note 1/m in Wood et. al 2019)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        mu = C + a*(b - np.degrees(Sza))**(-c) # atm. air mass (note 1/m in Wood et. al 2019)
     return pressure / 1013.25 / mu
 
 def calc_aot_direct(ed, eds, sza, e_solar=None, sed=None, aod_type=["total_od", "aod_microtops", "aod_wood_2017"], et_wavelengths=None):
@@ -156,7 +157,10 @@ def calc_aot_direct(ed, eds, sza, e_solar=None, sed=None, aod_type=["total_od", 
     offsets = offset_am(airmasses)
     
     dnitoa =edni.divide(e_toa).astype(float)
-    tau_t = -1/airmasses*np.log(dnitoa)
+    
+    ##### ignores divide by zero warnings. the values are returned as nan, and not plotted
+    with np.errstate(divide="ignore", invalid="ignore"):
+        tau_t = -1/airmasses*np.log(dnitoa)
     tau_a = tau_t-tau_r.values
     tau_corr = (tau_a - offsets - offset_wl) *slope_wl
     

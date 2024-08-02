@@ -461,7 +461,7 @@ class WeightedSpectrum:
             plt.axvline(key-dist_from_centre, c="gray")
             plt.suptitle("Shift: "+str(new_cal[0]) + "\n Stretch: " + str(np.round(new_cal[1], 2)))
             plt.legend()
-            plt.show()
+            plt.show(block=False)
             
             ##### prepare data to plot all attempted shift and stretch values with fit quality
             this_attempts = attempts[key]
@@ -497,7 +497,7 @@ class WeightedSpectrum:
             plt.ylabel("stretch")
             plt.suptitle(self.name+"\n segment centre point: "+str(key))
             
-            plt.show()
+            plt.show(block=False)
     
     def plot_segmented_calibration(self, dist):
         """plots all the linear calibrations in the segment they are used"""
@@ -514,7 +514,7 @@ class WeightedSpectrum:
             y_data = np.array(y_data).round().astype(int)
             plt.scatter(x_data, y_data, s=1, c="tab:blue")
         plt.suptitle(self.name+" "+ "segmented wavelength calibration")
-        plt.show()
+        plt.show(block=False)
     
     def plot_segmented_linear_calibration(self, dist_from_centre):
         """plot the combination of all segments with their linear calibration, 
@@ -539,7 +539,7 @@ class WeightedSpectrum:
         plt.ylabel("wavelength")
         plt.suptitle(self.name+" "+ "initial segmented linear calibration")
         plt.legend()
-        plt.show()
+        plt.show(block=False)
     
     def plot_matched_dips(self, ref, measured):
         """plots the dips that have been found onto their corrseponding spectra, 
@@ -571,7 +571,7 @@ class WeightedSpectrum:
         plt.ylabel("wavelength")
         plt.suptitle(self.name+" "+ "selected dips" + ref_string[:-2] + measured_string[:-2])
         plt.legend()
-        plt.show()
+        plt.show(block=False)
     
     def plot_calibration(self, measured, poly):
         """plots the calibration polynomial, with the dips used to find it"""
@@ -589,7 +589,7 @@ class WeightedSpectrum:
         plt.ylabel("wavelength")
         plt.legend()
 
-        plt.show()
+        plt.show(block=False)
 
     
     def get_calibrated_spectrum(self, poly):
@@ -631,7 +631,7 @@ class WeightedSpectrum:
         plt.xlabel("wavelength")
         plt.suptitle(self.name+" "+ "First measurement calibrated")
         plt.legend()
-        plt.show()
+        plt.show(block=False)
         
         # calibrated_dataset = self.ps.apply_wavelength_calibration(self.wavelength_spectra, poly, np.arange(300, 1101), output_shape=[300, 1101])
         
@@ -691,7 +691,7 @@ class WeightedSpectrum:
         for x, y in zip(ref, error):
             plt.annotate(f"{x:.0f}", (x, y))
         plt.plot(ref, np.sort(unrounded)-ref)
-        plt.show()
+        plt.show(block=False)
     
     
     

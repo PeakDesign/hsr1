@@ -143,9 +143,9 @@ def read_amplitude_file(file_path):
 
 def add_curves_to_graph(graph, curve, scale):
     plt.plot(graph)
-    plt.show()
+    plt.show(block=False)
     plt.plot(curve)
-    plt.show()
+    plt.show(block=False)
     
     
     curve_mid = int(len(curve)/2)
@@ -163,7 +163,7 @@ def add_curves_to_graph(graph, curve, scale):
         
         new_graph[start:stop] += curve[curve_start:curve_stop]
         plt.plot(new_graph)
-        plt.show()
+        plt.show(block=False)
 
 def poly_to_string(poly):
     return f"{poly[3]:.2e}x^3 + {poly[2]:.2e}x^2 + {poly[1]:.2f}x + {poly[0]:.2f}"
@@ -291,5 +291,5 @@ def apply_inverse_polynomial_a(y, c0, c1, c2, c3, flip=True):
     
     corresponding_pixels = np.interp(y, sample_y, sample_x, right=12345, left = -12345)
     plt.axvline(corresponding_pixels)
-    plt.show()
+    plt.show(block=False)
     return corresponding_pixels

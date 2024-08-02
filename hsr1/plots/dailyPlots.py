@@ -14,11 +14,12 @@ import hsr1.plots.graphUtils as graphUtils
 import hsr1.plots.flagData as flagData
 
 class DailyPlots:
-    def __init__(self, columns, data, title_prefix, output_location=None, flag=False, max_limit=None, min_limit=None):
+    def __init__(self, columns, data, title_prefix, output_location=None, flag=False, max_limit=None, min_limit=None, block=True):
         self.columns = columns
         self.title_prefix = title_prefix
         self.output_location = output_location
         self.flag = flag
+        self.block = block
         
         ##### if dni is one of the columns, set ylimit according to the next 100 from ghi
         ##### as dfi has big spikes near sunset
@@ -147,9 +148,6 @@ class DailyPlots:
                 row_dates.append(this_row)
             
             last_valid_day = all_days[-1]
-            # if len(row_dates[-1]) < days_in_row:
-            #     for i in range(days_in_row - len(row_dates[-1])):
-            #         row_dates[-1] = np.append(row_dates[-1], (pd.Timestamp(last_valid_day) + pd.Timedelta(i+1, "days")).strftime("%Y-%m-%d"))
             
             title = ""
             months = pd.Series(pd.to_datetime(days)).dt.strftime("%B").unique()
@@ -208,7 +206,7 @@ class DailyPlots:
         
         if self.output_location is not None:
             plt.savefig(self.output_location+"/daily_plots_"+full_title+".png")
-        plt.show()
+        plt.show(block=self.block)
     
     
     def plot_series(self, period, rows, days_in_row, data, ignore_zeros=False):

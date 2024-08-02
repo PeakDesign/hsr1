@@ -107,8 +107,9 @@ class SqliteDBLoad():
                 non_dupe_columns.append(col)
         columns = non_dupe_columns
         
+        
         ##### make a list of all the column headers except accessory and a list of all the accessory column headers
-        if table == "accessory":
+        if table == "accessory_data":
             table_type = "accessory"
         else:
             column_headers, table_type = self.__guess_type(column_headers, columns)
@@ -132,8 +133,6 @@ class SqliteDBLoad():
                         break
             if not found and raise_on_missing:
                 raise KeyError("column: '" +column+ "' was not found, maybe use 'load_metadata()' or 'load_accessory_data()")
-        
-        
         
         
 
@@ -386,7 +385,6 @@ class SqliteDBLoad():
                          raise_on_missing, sort, timezone)
         if len(data)>0:
             if isinstance(data.loc[0, column], np.ndarray):
-                print("spectrum")
                 return pd.DataFrame(np.stack(data[column].values), index=data["pc_time_end_measurement"], columns=np.arange(300, 1101, 1))
             else:
                 print("could not load spectrum, column was not a dataframe")
@@ -516,13 +514,13 @@ class SqliteDBLoad():
                 if not only_normal and not only_deployment:
                     has_deployment_data = False
             
-            num_tables = sum([has_normal_data, has_deployment_data, has_accessory_data])
+            num_table_types = sum([has_normal_data, has_deployment_data, has_accessory_data])
             
-            if num_tables > 1 and len(columns) > 1:
-                raise Exception("You have requested data from incompatible tables (probably because they have unequal lengths). " + 
-                                "Make multiple seperate requests")
+            if num_table_types > 1 and len(columns) > 1:
+                raise ValueError("You have requested data from incompatible tables (probably because they have unequal lengths). " + 
+                                 "Make multiple seperate requests")
             
-            if num_tables == 1:
+            if num_table_types == 1:
                 if has_normal_data:
                     _type = "normal"
                 if has_accessory_data:
