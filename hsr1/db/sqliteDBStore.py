@@ -41,8 +41,6 @@ class SqliteDBStore():
         spectral_data, system_data, deployment_metadata = self.__sqlite_change_types([spectral_data, system_data, deployment_metadata])
         deployment_metadata = deployment_metadata.reset_index(drop=True)
         
-        # TODO: more thorough check if db exists
-        ##### checks if appending to a database or making new one, and if it already exists, checks to see if its the same deployment
         if driver.exists():
             db_load = hsr1.db.SqliteDBLoad(self.db_name)
             deployment_metadata = self.match_deployment_ids(deployment_metadata, db_load)

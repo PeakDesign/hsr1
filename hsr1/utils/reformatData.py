@@ -46,10 +46,18 @@ class ReformatData():
             system_data = self.reformat_system_data(dataframes[4], gps_type, accessory_data, spectral_data.index)
             
             
-        
         if system_data is not None:
-            system_data = self.match_sample_ids(spectral_data, system_data, "sample_id")
-            system_data = self.reset_index(system_data, "pc_time_end_measurement")
+            if deployment_metadata["mobile"].iloc[0]:
+                aux_average_period = int(deployment_metadata["aux_average_period"].iloc[0])
+                ##### tolerance in in ns, convert s to ns
+                system_data = self.match_sample_ids(spectral_data, system_data, "sample_id", tolerance=aux_average_period*10**9)
+            else:
+                system_data = self.match_sample_ids(spectral_data, system_data, "sample_id")
+            
+            ##### fills in all nan sample_id values as that will cause a crash
+            nan_readings = system_data["sample_id"].isna()
+            uuids = [uuid.uuid1() for i in range(sum(nan_readings))]
+            system_data.loc[nan_readings, "sample_id"] = uuids
         
         spectral_data = self.reset_index(spectral_data, "pc_time_end_measurement")
         
@@ -97,7 +105,11 @@ class ReformatData():
         params = config_reader.read_section("deployment") | config_reader.read_section("dataseries")
         
         if not "mobile" in params.keys():
-            params["mobile"] = False
+            if params["default_longitude"] == "''" or params["default_latitude"] == "''":
+                params["mobile"] = True
+            else:
+                params["mobile"] = False
+        
         if not "location_name" in params.keys():
             params["location_name"] = ""
         
@@ -389,6 +401,7 @@ class ReformatData():
         
         for col in ["gps_latitude", "gps_longitude", "gps_altitude", "pressure", "baro_temp", "rh", "rh_temp"]:
             agg_dict[col] = "mean"
+        
         averaged_system_data = system_data.groupby(spectral_timestamps_int[np.clip(np.digitize(system_timestamps, spectral_timestamps_int, right=True), 0, len(spectral_timestamps)-1)])#.agg(agg_dict)
         averaged_system_data = averaged_system_data.agg(agg_dict)
         
@@ -526,19 +539,35 @@ class ReformatData():
         df.index = df.index.round(frequency)
         return df
     
-    def match_sample_ids(self, source:pd.DataFrame, to_be_matched:pd.DataFrame, column:str) -> pd.DataFrame:
+    def match_sample_ids(self, source:pd.DataFrame, to_be_matched:pd.DataFrame, column:str, tolerance=None) -> pd.DataFrame:
         """matches the sample ids from a dataframe with sample ids(or other columns) to one without, where they share a timestamp
         params:
             source: dataframe that already has ids
             to_be_matched: dataframe that will take the id from source where timestamps match
             column: the column that will be transferred from source, usually sample_id
+            tolerance: if there isnt a perfect match, how far either side to look (ns)
         returns: to_be_matched: the dataframe with the matched ids added
         """
         
-        # TODO: to make faster: subdataframes and pd.merge
-        # probably dosent matter, already very fast, 0.02s for 2months of data
-        to_be_matched[column] = np.nan
-        to_be_matched[column] = to_be_matched[column].fillna(source[column])
+        match_df = pd.DataFrame(np.array([source.index, source[column]]).T, columns=["pc_time_end_measurement", column])
+        to_be_matched = to_be_matched.copy()
+        
+        match_df["pc_time_end_measurement"] = pd.to_datetime(match_df["pc_time_end_measurement"])
+        
+        to_be_matched = self.reset_index(to_be_matched, "pc_time_end_measurement")
+        to_be_matched["pc_time_end_measurement"] = pd.to_datetime(to_be_matched["pc_time_end_measurement"])
+        
+        
+        to_be_matched["pc_time_end_measurement"] = to_be_matched["pc_time_end_measurement"].astype("int64")
+        match_df["pc_time_end_measurement"] = match_df["pc_time_end_measurement"].astype("int64")
+        
+        
+        merged_df = pd.merge_asof(to_be_matched, match_df, on="pc_time_end_measurement", direction="nearest", tolerance=tolerance)
+        
+        to_be_matched["sample_id"] = merged_df["sample_id"]
+        
+        to_be_matched["pc_time_end_measurement"] = pd.to_datetime(to_be_matched["pc_time_end_measurement"])
+        
         return to_be_matched
     
     def listify(self, df):
