@@ -6,7 +6,7 @@ import pandas as pd
 import hsr1
 
 # creates DBDriver object for the database where the data to be plotted is stored
-database_location = "C:/Users/albie/work/hsr1/databases/small_sgp.db"
+database_location = "databases/my_database.db"
 db = hsr1.DBDriver(database_location)
 
 # loads the data that will be used to calculate the aod

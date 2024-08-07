@@ -513,16 +513,16 @@ class SqliteDBStore():
         id_new = new.loc[new["deployment_id"] == deployment_id, "pc_time_end_measurement"]
         
         if len(id_existing) == 0:
-            print("new data has different deployment_metadata, creating a new d")
+            raise ValueError("existing data has a different deployment_id to the new data, not merging")
         
         id_existing = pd.to_datetime(id_existing)
         id_new = pd.to_datetime(id_new)
         
         
-        existing_limits = (id_existing.loc[0],
-                           id_existing.loc[len(id_existing)-1])
-        new_limits = (id_new.loc[0],
-                      id_new.loc[len(id_new)-1])
+        existing_limits = (id_existing.iloc[0],
+                           id_existing.iloc[len(id_existing)-1])
+        new_limits = (id_new.iloc[0],
+                      id_new.iloc[len(id_new)-1])
         
         existing_intersection = np.logical_and(id_existing >= new_limits[0],
                                                id_existing <= new_limits[1])

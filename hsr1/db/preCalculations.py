@@ -204,24 +204,6 @@ class PreCalculations:
         
         uses pressure and temperature values from internal sensors, forward fills if there are missing values
         """
-        # elv = np.array(self.sun_data["elevation"])
-        
-        # ##### puts all the relevant data into one dataframe to match timestamps, and for simplicity
-        # data = pd.DataFrame()
-        # data.index = df.index
-        # data["elv"] = elv
-        
-        # data["pressure"] = 1.01325
-        # data["temperature"] = 21
-        # try:
-        #     data["temperature"] = df["baro_temp"]+5.5
-        # except:
-        #     pass
-        # data = data.ffill(axis=1)
-        
-        # ##### correct for atmospheric refraction
-        # # elv_corr = sg2.topocentric_correction_refraction_SAE(data["elv"], data["pressure"], data["temperature"])
-        # elv_corr = data["elv"]
         
         sza = (math.pi/2) - np.array(self.sun_data["elevation"])
         return sza
