@@ -16,8 +16,9 @@ import hsr1.utils.spectrum.spectrumUtils as SpectrumUtils
 
 
 class LinearDipsGraph:
-    def __init__(self, block=True):
+    def __init__(self, block=True, output_location=None):
         self.block = block
+        self.output_location = output_location
     
     def plot_n_biggest_dips(self, global_spectrum, 
                             n=15,
@@ -75,7 +76,10 @@ class LinearDipsGraph:
         
         graphUtils.plot_reference_lines_and_labels(axes, xlims[0])
         
-        plt.show(block=self.block)        
+        if self.output_location is not None:
+            plt.savefig(self.output_location+"/biggest dips graph "+str(dates.iloc[0].date())+".png")
+        plt.show(block=self.block)
+        
         
     
     

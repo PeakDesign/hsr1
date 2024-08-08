@@ -37,14 +37,10 @@ import hsr1.utils.HSRFunc as HsrFunc
 
 class Graph:
     def __init__(self, 
-                 data=None, 
                  driver:DBDriver=None, 
-                 dataframe=None, 
-                 deployment_metadata:pd.DataFrame=None, 
-                 accessory_data:pd.DataFrame=None, 
+                 timezone:str="+00:00",
                  output_location:str=None, 
                  diffuse_name:str="DIF", 
-                 timezone:str="+00:00",
                  dpi:int=100,
                  block=True,
                  **kwargs):
@@ -75,31 +71,19 @@ class Graph:
         load data, do some data processing, and then use one of the plots from hsr1.plots
         """
         self.driver = driver
-        self.dataframe = dataframe
-        self.deployment_metadata = deployment_metadata
-        self.accessory_data = accessory_data
         self.diffuse_name = diffuse_name
-        self.timezone, self.timedelta = reformat().calculate_timezone(timezone)
         self.output_location = output_location
         self.kwargs = kwargs
+        self.timezone, self.timedelta = reformat().calculate_timezone(timezone)
+        self.kwargs["timezone"] = timezone
         self.block = block
         
-        if isinstance(data, pd.DataFrame):
-            self.dataframe = data
-        elif isinstance(data, DBDriver):
-            self.driver = data
-        elif isinstance(data, str):
-            print("db_name was passed")
-            self.driver = DBDriver(data)
+        self.deployment_metadata = None
+        
         
         if output_location is not None:
             Path(output_location).mkdir(parents=True, exist_ok=True)
         
-        if self.driver is None and self.dataframe is None and self.accessory_data is None:
-            raise ValueError("graph must have data or a database driver")
-        
-        if self.dataframe is None:
-            self.dataframe = pd.DataFrame()
             
         self.jet_black_zero = self.__make_colormap()
         
@@ -159,15 +143,7 @@ class Graph:
         ##### one liner to remove duplicates from a list while preserving the order
         data_columns = list(dict.fromkeys(data_columns).keys())
         
-        data = None
-        if dataframe is None:
-            data = self.dataframe.copy()
-        else:
-            data = dataframe.copy()
-        
-        if np.logical_not(np.isin(data_columns, data.columns)).any():
-            print("loading data from the database")
-            data = self.driver.db_load.load(data_columns+["pc_time_end_measurement"], timezone=timezone, **self.kwargs)
+        data = self.load_data(columns, dataframe)
         
         if dni:
             data["direct_normal_integral"] = ((data["global_integral"]-data["diffuse_integral"])/np.cos(data["sza"]))
@@ -194,22 +170,23 @@ class Graph:
         
         plt.show(block=self.block)
     
-    def daily_integrals(self, period="monthly", rows=None, days_in_row=None, flag=True):
-        """daily plot preset of dni, ghi, and diffuse"""
+    def daily_integrals(self, period="monthly", rows=None, days_in_row=None, flag=True, dataframe=None):
+        """daily plot preset of dni, ghi, and diffuse, also uses sza and toa_hi to flag data"""
         print("plotting daily integrals")
         columns = ["direct_normal_integral", "global_integral", "diffuse_integral"]
-        self.plot_daily_line(columns, period, rows, days_in_row, flag, "sunlight intensity in ")
+        self.plot_daily_line(columns, period, rows, days_in_row, flag, "sunlight intensity in ", dataframe=dataframe)
     
-    def daily_temps(self, period="monthly", rows=None, days_in_row=None, flag=True):
+    def daily_temps(self, period="monthly", rows=None, days_in_row=None, flag=True, dataframe=None):
         """daily plot preset of all different temperature measurements"""
         print("plotting daily temps")
         columns = ["T_CPU", "T_Bezel", "T_RH", "T_Baro"]
-        self.plot_daily_line(columns, period, rows, days_in_row, flag, True, "temperatures in ")
+        self.plot_daily_line(columns, period, rows, days_in_row, flag, True, "temperatures in ", dataframe=dataframe)
     
     def daily_aod_cimel(self, aod_type:str="aod_microtops", wavelengths:list=None, 
                         period=21, rows=3, days_in_row=7, 
                         upper_limit=2, lower_limit=0,
-                        clearsky_filter:str="wood", clearsky_filter_kwargs:dict={}):
+                        clearsky_filter:str="wood", clearsky_filter_kwargs:dict={},
+                        dataframe=None):
         """daily plot of the aod at the wavelengths measured by cimel spectrometers
         these wavelengths are: [380, 440, 500, 675, 870, 1020]
         
@@ -232,8 +209,9 @@ class Graph:
         else:
             wavelengths = np.array(wavelengths)
         
-        requirements = ["pc_time_end_measurement", "global_spectrum", "diffuse_spectrum", "sza", "sed", "global_integral", "diffuse_integral"]
-        data = self.driver.db_load.load(requirements, raise_on_missing=False, timezone=self.timezone, **self.kwargs)
+        columns = ["pc_time_end_measurement", "global_spectrum", "diffuse_spectrum", "sza", "sed", "global_integral", "diffuse_integral"]
+        data = self.load_data(columns, dataframe)
+        
         data = data.drop_duplicates(["pc_time_end_measurement"])
         
         deployment_metadata = None
@@ -268,7 +246,7 @@ class Graph:
     hist plots and presets
     -------------------"""
     
-    def plot_daily_hist(self, columns:[str], title:[str]="", **kwargs):
+    def plot_daily_hist(self, columns:[str], title:[str]="", dataframe=None, **kwargs):
         """plots a histogram of each column, one column per day
         params:
             columns: list of column headers that will be plotted
@@ -278,49 +256,44 @@ class Graph:
         print("plotting daily histograms")
         if type(columns) == str:
             columns = [columns]
-        data = self.dataframe.copy()
-        if np.logical_not(np.isin(columns, data.columns)).any():
-            if self.driver is not None:
-                data = self.driver.db_load.load(columns+["pc_time_end_measurement"], **self.kwargs)
-        else:
-            raise ValueError("db_driver was not passed and the requested columns are not in the dataframe")
+        
+        data = self.load_data(columns+["pc_time_end_measurement"], dataframe)
+        
         dh = DailyHists(data)
         dh.plot_hists(columns, title, **kwargs)
         
         plt.show(block=self.block)
     
-    def voltage_hists(self):
+    def voltage_hists(self, dataframe=None):
         """daily histogram preset of all voltage measurements"""
         print("plotting voltage histograms")
         columns = ["_15Vin", "_3VCAP", "Vcc", "VSpare"]
-        data = self.dataframe.copy()
-        if np.logical_not(np.isin(columns, data.columns)).any():
-            data = self.driver.db_load.load(columns+["pc_time_end_measurement"])
+        data = self.load_data(columns, dataframe)
+        
         data[columns] /= 1000
         dh = DailyHists(data)
-        dh.plot_hists(columns, "Voltages", ignore_zero=True)
+        dh.plot_hists(columns, "Voltages (x1000)", ignore_zero=True)
         
         plt.show(block=self.block)
         
-    def pht_hists(self):
+    def pht_hists(self, dataframe=None):
         """daily histogram preset of pressure, humidity and temperature"""
         print("plotting temperature histograms")
         columns = ["pressure", "rh", "baro_temp"]
-        data = self.dataframe.copy()
-        if np.logical_not(np.isin(columns, data.columns)).any():
-            data = self.driver.db_load.load(columns+["pc_time_end_measurement"])
+        data = self.load_data(columns, dataframe)
+        
         dh = DailyHists(data)
         dh.plot_hists(columns, "Pressure, humidity and temperature", ignore_zero=True)
         
         plt.show(block=self.block)
     
-    def current_hists(self):
+    def current_hists(self, dataframe=None):
         """daily histogram preset of all current measurements"""
         print("plotting current histograms")
+        
         columns = ["I_Tot", "I_15VCAM", "I_15VPC", "ISpare"]
-        data = self.dataframe.copy()
-        if np.logical_not(np.isin(columns, data.columns)).any():
-            data = self.driver.db_load.load(columns+["pc_time_end_measurement"])
+        data = self.load_data(columns, dataframe)
+        
         dh = DailyHists(data)
         dh.plot_hists(columns, "Currents", ignore_zero=False)
         
@@ -333,7 +306,7 @@ class Graph:
     
     def biggest_dips(self, n=15, cutoff_angle=np.radians(80), cutoff_wavelength=1000,
                       date_format:str="%y-%m-%d %H:%M",
-                      title=None):
+                      title=None, dataframe=None):
         """whole dataset plot of the n biggest peaks for each measurement, looks like several horizontal lines
         params:
             n: the number of peaks that will be selected per measurement
@@ -341,16 +314,16 @@ class Graph:
             cutoff_wavelength: the maximum wavelength included
         """
         print("plotting the biggest dips")
-        global_spectrum = self.dataframe.copy()
-        if np.logical_not(np.isin(["pc_time_end_measurement", "global_spectrum"], global_spectrum.columns)).any():
-            global_spectrum = self.load_spectrum(cutoff_angle, **self.kwargs)
+        if dataframe is None:
+            dataframe = self.load_spectrum(cutoff_angle, **self.kwargs)
         
-        linearDipsGraph = LinearDipsGraph(block=self.block)
-        linearDipsGraph.plot_n_biggest_dips(global_spectrum, n, cutoff_wavelength)
+        linearDipsGraph = LinearDipsGraph(block=self.block, output_location=self.output_location)
+        linearDipsGraph.plot_n_biggest_dips(dataframe, n, cutoff_wavelength)
     
     def daily_biggest_dips(self, n:int=15, cutoff_angle:float=np.radians(80), 
                             cutoff_wavelength:int=1000,
-                            date_format:str="%H:%M"):
+                            date_format:str="%H:%M",
+                            dataframe=None):
         """one plot per day of the the n biggest peaks for each measurement
         params:
             n: the number of peaks that will be selected per measurement
@@ -358,15 +331,15 @@ class Graph:
             cutoff_wavelength: the maximum wavelength included
         """
         print("plotting the biggest dips in each day")
-        global_spectrum = self.dataframe.copy()
-        if np.logical_not(np.isin(["pc_time_end_measurement", "global_spectrum"], global_spectrum.columns)).any():
-            global_spectrum = self.load_spectrum(cutoff_angle)
+        if dataframe is None:
+            dataframe = self.load_spectrum(cutoff_angle, **self.kwargs)
         
-        linearDipsGraph = LinearDipsGraph(block=self.block)
-        linearDipsGraph.plot_biggest_dips_day(global_spectrum, n, cutoff_wavelength, date_format)
+        linearDipsGraph = LinearDipsGraph(block=self.block, output_location=self.output_location)
+        linearDipsGraph.plot_biggest_dips_day(dataframe, n, cutoff_wavelength, date_format)
+        
+        
     
-    
-    def plot_time_day(self, column:str, stack_resolution="max", max_integral=2):
+    def plot_time_day(self, column:str, stack_resolution="max", max_integral=2, dataframe=None):
         """plots a column from the database on a time/day plot
         params:
             column: the column to plot
@@ -375,9 +348,8 @@ class Graph:
             max_integral: the max value that the colourmap extends over
         """
         print("plotting a time/day graph")
-        data = self.dataframe.copy()
-        if np.logical_not(np.isin([column], data.columns)).any():
-            data = self.driver.db_load.load([column]+["pc_time_end_measurement"], timezone=self.timezone, **self.kwargs)
+        columns = [column]+["pc_time_end_measurement"]
+        data = self.load_data(columns, dataframe)
         
         fig = plt.figure(figsize=(11.7, 8.3))
         axes = fig.subplots(1)
@@ -389,16 +361,21 @@ class Graph:
         
         deployment_metadata = self.deployment_metadata
         if deployment_metadata is None:
-            deployment_metadata = self.driver.load_metadata()
+            if self.driver is not None:
+                deployment_metadata = self.driver.load_metadata()
+            else:
+                print("No Deployment metadata available for the title")
         
         if deployment_metadata is not None:
             title = deployment_metadata["deployment_description"][0] + "\n" + column
             plt.figtext(x=0.5, y=0.93, s=title, horizontalalignment="center")
         
+        if self.output_location is not None:
+            plt.savefig(self.output_location+"/time-day graph.png")
         plt.show(block=self.block)
     
     
-    def plot_elv_azi(self, column:str):
+    def plot_elv_azi(self, column:str, dataframe=None):
         """plots a graph of elevation against azimuth, with the colour representing
         the largest of a given value measured with each pair of elevation and azimuth values.
         
@@ -412,9 +389,12 @@ class Graph:
         # truncate dosent work, assumes 1min data
         # use code from reformat_data? 
         print("plotting an elevation/azimuth graph")
-        data = self.dataframe.copy()
-        if np.logical_not(np.isin([column], data.columns)).any():
-            data = self.driver.db_load.load([column]+["pc_time_end_measurement", "sza", "azimuth"], timezone=self.timezone, **self.kwargs)
+        # data = self.dataframe.copy()
+        # if np.logical_not(np.isin([column], data.columns)).any():
+        #     data = self.driver.db_load.load([column]+["pc_time_end_measurement", "sza", "azimuth"], timezone=self.timezone, **self.kwargs)
+        
+        columns = [column]+["pc_time_end_measurement", "sza", "azimuth"]
+        data = self.load_data(columns, dataframe)
         
         fig = plt.figure(figsize=(11.7, 8.3))
         axes = fig.subplots(1)
@@ -424,19 +404,24 @@ class Graph:
         
         deployment_metadata = self.deployment_metadata
         if deployment_metadata is None:
-            deployment_metadata = self.driver.load_metadata()
+            if self.driver is not None:
+                deployment_metadata = self.driver.load_metadata()
+            else:
+                print("No Deployment metadata available for the title")
         
         if deployment_metadata is not None:
             title = deployment_metadata["deployment_description"][0] + "\n" + column
             plt.figtext(x=0.5, y=0.93, s=title, horizontalalignment="center")
         
+        if self.output_location is not None:
+            plt.savefig(self.output_location+"/elevation-azimuth graph.png")
         plt.show(block=self.block)
     
     
     
     
     
-    def plot_aod_day(self, clearsky_filter:str="wood", clearsky_filter_kwargs:dict={}):
+    def plot_aod_day(self, clearsky_filter:str="wood", clearsky_filter_kwargs:dict={}, dataframe=None):
         """Plots the Aerosol Optical Depth across the spectrum, one page per day
         params:
             clearsky_filter: which clearsky filtering method to use. currently only "wood" is implemented.
@@ -446,8 +431,8 @@ class Graph:
         
         """
         print("plotting the aod each day")
-        requirements = ["pc_time_end_measurement", "global_spectrum", "diffuse_spectrum", "sza", "sed", "global_integral", "diffuse_integral"]
-        data = self.driver.db_load.load(requirements, raise_on_missing=False, timezone=self.timezone, **self.kwargs)
+        columns = ["pc_time_end_measurement", "global_spectrum", "diffuse_spectrum", "sza", "sed", "global_integral", "diffuse_integral"]
+        data = self.load_data(columns, dataframe)
         data = data.drop_duplicates(["pc_time_end_measurement"])
         
         deployment_metadata = None
@@ -510,7 +495,7 @@ class Graph:
             
             plt.show(block=self.block)
     
-    def plot_spectrum_day(self, normalisation=None):
+    def plot_spectrum_day(self, normalisation=None, dataframe=None):
         """plots each spectrum over a day on a colour intensity plot
         params:
             normalisation: how to normalise the data default None
@@ -522,17 +507,13 @@ class Graph:
         spec_day = SpectrumGraph(cmap=self.jet_black_zero, timedelta=self.timedelta)
         
         requirements = []
-        data = None
-        if len(self.dataframe) == 0:
-            requirements = ["gps_latitude", "gps_longitude", "gps_altitude"]
-            requirements += spec_day.requirements["all"].copy()
-            requirements += ["global_integral", "diffuse_integral"]
-            
-            data = self.driver.db_load.load(requirements, raise_on_missing=False, timezone=self.timezone, **self.kwargs)
-            data = data.drop_duplicates(["pc_time_end_measurement"])
-        else:
-            data = self.dataframe
+        requirements = ["gps_latitude", "gps_longitude", "gps_altitude"]
+        requirements += spec_day.requirements["all"].copy()
+        requirements += ["global_integral", "diffuse_integral"]
         
+        data = self.load_data(requirements, dataframe)        
+        
+        data = data.drop_duplicates(["pc_time_end_measurement"])
         
         
         deployment_metadata = None
@@ -627,7 +608,7 @@ class Graph:
                           cutoff_wavelength:float=1000, 
                           reference_lines:list=None, 
                           reference_labels:list=None,
-                          title=""):
+                          title="", dataframe=None):
         """histogram of the largest dips over a dataset
         params:
             n: the number of peaks that will be selected per measurement
@@ -641,12 +622,12 @@ class Graph:
                 if you dont want to label them all
         """
         print("plotting dips summary")
-        global_spectrum = self.dataframe.copy()
-        if np.logical_not(np.isin(["pc_time_end_measurement", "global_spectrum"], global_spectrum.columns)).any():
-            global_spectrum = self.load_spectrum(cutoff_angle, **self.kwargs)
+        
+        columns = ["pc_time_end_measurement", "global_spectrum"]
+        data = self.load_data(columns, dataframe)
         
         dailyDipsSummary = DailyDipsSummary(self.timezone, reference_lines, reference_labels)
-        fig = dailyDipsSummary.plot_daily_peaks_summary(global_spectrum, n, cutoff_wavelength)
+        fig = dailyDipsSummary.plot_daily_peaks_summary(data, n, cutoff_wavelength)
         
         deployment_metadata = None
         if self.deployment_metadata is None and self.driver is not None:
@@ -660,7 +641,7 @@ class Graph:
         fig.suptitle(title+"\n", x=0.47)
         
         if deployment_metadata is not None:
-            metadata_string = graphUtils.generate_metadata_string(deployment_metadata, global_spectrum)
+            metadata_string = graphUtils.generate_metadata_string(deployment_metadata, data)
             plt.figtext(x=0.47, y=0.93, s=metadata_string, horizontalalignment="center")
         
         print("dips summary plotted")
@@ -671,41 +652,36 @@ class Graph:
         
     
     
-    def plot_integral(self, flag=False, title="", max_integral=None):
+    def plot_integral(self, flag=False, title="", max_integral=None, dataframe=None):
         """plots a summary of the integral data in a dataset"""
         
         print("plotting summary")
         
         
-        time_day_graph = TimeDayGraph(self.jet_black_zero, self.timezone, diffuse_name=self.diffuse_name)
+        time_day_graph = TimeDayGraph(self.jet_black_zero, diffuse_name=self.diffuse_name)
         elv_azimuth_graph = ElvAziGraph(diffuse_name=self.diffuse_name)
         clearness_graph = ClearnessDensityGraph(diffuse_name=self.diffuse_name)
-        linear_graph = LinearTimeGraph(self.timezone, diffuse_name=self.diffuse_name)
+        linear_graph = LinearTimeGraph(diffuse_name=self.diffuse_name)
         
         graphs = [time_day_graph, elv_azimuth_graph, clearness_graph, linear_graph]
         
-        time_day_graph.timezone = self.timezone
+        # time_day_graph.timezone = self.timezone
         
-        requirements = []
-        data = None
-        if len(self.dataframe) == 0:
-            requirements = ["gps_latitude", "gps_longitude", "gps_altitude"]
-            for x in graphs:
-                new_requirements = x.requirements["all"].copy()
-                
-                ##### this value will be calculated from other values, so is not in the database
-                not_in_db_reqs = ["direct_normal_integral"]
-                for not_in_db_req in not_in_db_reqs:
-                    if not_in_db_req in new_requirements:
-                        new_requirements.remove(not_in_db_req)
-                requirements += new_requirements
+        
+        requirements = ["gps_latitude", "gps_longitude", "gps_altitude"]
+        for x in graphs:
+            new_requirements = x.requirements["all"].copy()
             
-            data = self.driver.db_load.load(requirements, raise_on_missing=False, timezone=self.timezone, **self.kwargs)
+            ##### this value will be calculated from other values, so is not in the database
+            not_in_db_reqs = ["direct_normal_integral"]
+            for not_in_db_req in not_in_db_reqs:
+                if not_in_db_req in new_requirements:
+                    new_requirements.remove(not_in_db_req)
+            requirements += new_requirements
         
-            data = data.drop_duplicates(["pc_time_end_measurement"])
-        
-        else:
-            data = self.dataframe
+        data = self.load_data(requirements, dataframe)
+    
+        data = data.drop_duplicates(["pc_time_end_measurement"])
         
         if "gps_longitude" in requirements and not "gps_longitude" in data.columns:
             deployment_metadata = self.driver.db_load.load_metadata(["default_longitude", "default_latitude", "default_elevation"]).iloc[0]
@@ -818,7 +794,7 @@ class Graph:
         
         
     
-    def plot_accessory(self, title=""):
+    def plot_accessory(self, title="", dataframe=None, accessory_dataframe=None):
         """generates a page of plots summarising the data in accessory_data
         contains:
             pressure, humidity and a comparison of the different temperature measurements
@@ -829,46 +805,34 @@ class Graph:
         print("plotting accessory_data")
         
         spectral_data = None
-        data = None
-        if self.accessory_data is None:
-            ##### all the data that will be loaded from the accessory table of the database
-            requirements = ["pc_time_end_measurement", 
-                            "StatusFlags",
-                            "RH", 
-                            "Pressure", 
-                            "T_Bezel", 
-                            "T_Baro", 
-                            "_15Vin", 
-                            "Vcc", 
-                            "I_Tot", 
-                            "I_15VPC", 
-                            "I_15VCAM",
-                            "Latitude",
-                            "Longitude"]
-            
-            table_headers = self.driver.db_load.load_table_names()
-            
-            if not "accessory_data" in table_headers.keys():
-                print("Failed to plot accessory, this database has no accessory_data table")
-            
-            data = self.driver.db_load.load_accessory(requirements, timezone=self.timezone, **self.kwargs)
-            data = data.loc[data["StatusFlags"] != 0.0]
         
-        else:
-            data = self.accessory_data
+        ##### all the data that will be loaded from the accessory table of the database
+        requirements = ["pc_time_end_measurement", 
+                        "StatusFlags",
+                        "RH", 
+                        "Pressure", 
+                        "T_Bezel", 
+                        "T_Baro", 
+                        "_15Vin", 
+                        "Vcc", 
+                        "I_Tot", 
+                        "I_15VPC", 
+                        "I_15VCAM",
+                        "Latitude",
+                        "Longitude"]
+        
+        data = self.load_data(requirements, accessory_dataframe)
+        data = data.loc[data["StatusFlags"] != 0.0]
+        
+        spectral_requirements = ["pc_time_end_measurement", "camera_temp"]
         
         has_spectral_data = False
-        if len(self.dataframe) == 0 and self.driver is not None:
-            ##### any data that will be loaded from the spectral table
-            #####   they have different lengths so they have to be loaded seperately
-            spectral_requirements = ["pc_time_end_measurement",
-                                     "camera_temp"]
-            spectral_data = self.driver.db_load.load(spectral_requirements, **self.kwargs)
+        try:
+            spectral_data = self.load_data(spectral_requirements, dataframe)
             has_spectral_data = True
-            
-        elif len(self.dataframe) == 0:
-            spectral_data = self.dataframe
-            has_spectral_data = True
+        except (ValueError, KeyError):
+            print("spectral data could not be loaded or was not passed")
+        
         
         
         layout = [["rh", "15vin"],
@@ -1005,7 +969,7 @@ class Graph:
         plt.show(block=self.block)
         
 
-    def plot_gps(self, title=""):
+    def plot_gps(self, title="", dataframe=None, accessory_dataframe=None):
         """plots a summary of gps related data
         contains:
             plots of gps position thougout the dataset, with the colour representing the time and reading density
@@ -1015,51 +979,34 @@ class Graph:
             plot of tilt: sqrt(pitch^2*roll^2)
         """
         print("plotting GPS")
-        
-        ##### data priority: prefer accessory_data over GPS, prefer directly passed data over data from a database
-        gps_type = "accessory"
-        data = self.accessory_data        
-        if data is None:
-            tables = None
-            if self.driver is not None:
-                tables = self.driver.load_table_names().keys()
-            if self.driver is not None and "accessory_data" in tables:
-                gps_type = "accessory"
-                if self.driver is not None:
-                    requirements = ["pc_time_end_measurement",
-                                    "StatusFlags",
-                                    "gps_time", 
-                                    "GPSAge",
-                                    "NSV",
-                                    "Roll", "Pitch",
-                                    "Latitude", "Longitude"]
-                    data = self.driver.load_accessory(requirements, timezone=self.timezone, **self.kwargs)
-            
-            ##### use data passed into self.data if it fits
-            elif (self.dataframe is not None and 
-            "longitude" in self.dataframe.columns and 
-            "latitude" in self.dataframe.columns and 
-            "pc_time_end_measurement" in self.dataframe.columns):
+        ##### loading data from the database or from the provided dataframes
+        ##### accessory_data will be used if available but if not, system_data will be used
+        data = None
+        gps_type = ""
+        try:
+            accessory_requirements = ["pc_time_end_measurement",
+                                      "StatusFlags",
+                                      "gps_time", 
+                                      "GPSAge",
+                                      "NSV",
+                                      "Roll", "Pitch",
+                                      "Latitude", "Longitude"]
+            data = self.load_data(accessory_requirements, accessory_dataframe)
+            gps_type = "accessory"
+        except (ValueError, KeyError):
+            try:
+                requirements = ["pc_time_end_measurement",
+                                "gps_longitude",
+                                "gps_latitude",
+                                "gps_time",
+                                "gps_status",
+                                "baro_temp",
+                                "pressure",
+                                "rh"]
+                data = self.load_data(requirements, dataframe)
                 gps_type = "GPS"
-                data = self.data
-            
-            elif self.driver is not None and "system_data" in tables:
-                gps_type = "GPS"
-                
-                if self.driver is not None:
-                    requirements = ["pc_time_end_measurement",
-                                    "gps_longitude",
-                                    "gps_latitude",
-                                    "gps_time",
-                                    "gps_status",
-                                    "baro_temp",
-                                    "pressure",
-                                    "rh"]
-                    data = self.driver.db_load.load(requirements)
-                    
-            
-            else:
-                raise ValueError("no data for gps")
+            except (ValueError, KeyError):
+                raise ValueError("insufficient columns to plot gps")
         
         
         layout = [["gps_density", "time_diff"],
@@ -1251,6 +1198,23 @@ class Graph:
             raise Exception("could not load spectrum")
         
         return spectrum
+    
+    def load_data(self, columns, dataframe):
+        """returns a dataframe with the requested columns. either from the passed dataframe
+        or from the dbdriver if that is missing.
+        """
+        columns = np.array(columns)
+        if dataframe is not None:
+            if np.isin(columns, dataframe.columns).all():
+                return dataframe
+        
+        if self.driver is None:
+            raise ValueError("database is None and not all the required columns were passed to dataframe")
+        
+        return self.driver.load(columns, **self.kwargs)
+                
+            
+        
     
     def wait_until_closed(self):
         """stops matplotlib from closing all the plots when the last one is generated
