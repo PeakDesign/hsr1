@@ -16,9 +16,10 @@ import hsr1.utils.spectrum.spectrumUtils as SpectrumUtils
 
 
 class LinearDipsGraph:
-    def __init__(self, block=True, output_location=None):
+    def __init__(self, block=True, output_location=None, title_prefix=""):
         self.block = block
         self.output_location = output_location
+        self.title_prefix = title_prefix
     
     def plot_n_biggest_dips(self, global_spectrum, 
                             n=15,
@@ -31,6 +32,7 @@ class LinearDipsGraph:
             n: the number of peaks that will be selected per measurement
             cutoff_wavelength: the maximum wavelength included
         """
+        global_spectrum = global_spectrum.copy()
         
         dates = global_spectrum["pc_time_end_measurement"].dt.tz_localize(None)
         
@@ -77,7 +79,7 @@ class LinearDipsGraph:
         graphUtils.plot_reference_lines_and_labels(axes, xlims[0])
         
         if self.output_location is not None:
-            plt.savefig(self.output_location+"/biggest dips graph "+str(dates.iloc[0].date())+".png")
+            plt.savefig(self.output_location+"/"+self.title_prefix+"biggest dips graph "+str(dates.iloc[0].date())+".png")
         plt.show(block=self.block)
         
         
@@ -85,6 +87,7 @@ class LinearDipsGraph:
     
     def plot_biggest_dips_day(self, global_spectrum, n=15, cutoff_wavelength=1000,
                                date_format:str="%H:%M"):
+        global_spectrum = global_spectrum.copy()
         global_spectrum["pc_time_end_measurement"] = pd.DatetimeIndex(global_spectrum["pc_time_end_measurement"].dt.tz_localize(None))
         
         days = global_spectrum["pc_time_end_measurement"].dt.date.unique()

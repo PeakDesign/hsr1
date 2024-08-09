@@ -98,6 +98,7 @@ class SpectrumGraph:
     
     def supplementary_integral_plot(self, data, axes, first_time, last_time, day, spec_day, cmap=False):
         ##### plot line graph of global and diffuse integral
+        data = data.copy()
         data = data[["pc_time_end_measurement", "global_integral", "diffuse_integral"]].copy()
         data["pc_time_end_measurement"] = data["pc_time_end_measurement"].dt.tz_localize(None)
         first_date_reading = data["pc_time_end_measurement"].iloc[0].date()

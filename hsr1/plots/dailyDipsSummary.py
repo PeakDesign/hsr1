@@ -23,6 +23,8 @@ class DailyDipsSummary:
         self.timezone = timezone
         
     def plot_daily_dips_hist(self, global_spectrum, n=15, cutoff_wavelength=1000):
+        global_spectrum = global_spectrum.copy()
+        
         dates = global_spectrum["pc_time_end_measurement"]
         
         global_spectrum = global_spectrum["global_spectrum"].values

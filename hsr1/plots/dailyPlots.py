@@ -21,6 +21,8 @@ class DailyPlots:
         self.flag = flag
         self.block = block
         
+        data = data.copy()
+        
         ##### if dni is one of the columns, set ylimit according to the next 100 from ghi
         ##### as dfi has big spikes near sunset
         min_max_columns = self.columns.copy()
@@ -54,7 +56,7 @@ class DailyPlots:
         
         if self.flag:
             df[self.flag_columns] = df[self.flag_columns].astype(float).fillna(0)
-            any_flags = data[self.flag_columns].any(axis=1)
+            any_flags = df[self.flag_columns].any(axis=1)
             df.loc[:, self.columns] = df.loc[:, self.columns].fillna(0)
             for column in self.columns:
                 flag_df = pd.DataFrame()
@@ -86,6 +88,7 @@ class DailyPlots:
     
     
     def plot_month(self, df, rows, days_in_row):
+        df = df.copy()
         if rows == None and days_in_row == None:
             rows = 5
             days_in_row = 7
@@ -116,6 +119,7 @@ class DailyPlots:
         self.plot_page(row_dates, df, last_day_of_month, title)
     
     def plot_int(self, df:pd.DataFrame, period:int, rows:int=None, days_in_row:int=None):
+        df = df.copy()
         ##### if insufficient rows/days_in_row are given make a best guess from the period and any given values
         if rows == None and days_in_row == None:
             x = math.sqrt(period)
@@ -214,7 +218,7 @@ class DailyPlots:
         params:
             period: how many days per page, "monthly", "weekly", integer
         """
-        
+        data = data.copy()
         # self.max_integral = (int((self.max_integral+10)/100)+1)*100
         if self.flag:
             data = pd.merge(data, self.flags, left_index=True, right_index=True)

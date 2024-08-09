@@ -75,6 +75,8 @@ class ElvAziGraph:
             show_xlabels: whether or not to show the x axes labels. useful when plotting multiple of these graphs with the same labels
             show_cbar: whether or not to show the colorbar. useful when plotting multiple of these graphs with the same colormap
         """
+        ##### copy to have local scope
+        df = df.copy()
         
         if self.max_integral is None:
             self.max_integral = np.max(df[column_name])
@@ -84,8 +86,7 @@ class ElvAziGraph:
         vert_pixels = int(bbox.height)
         horiz_pixels = int(bbox.width)
         
-        ##### copy to have local scope
-        df = df.copy()
+        
         df["elv"] = 90-np.degrees(df["sza"])
         df["azimuth"] = np.degrees(df["azimuth"])
         

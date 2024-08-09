@@ -50,6 +50,8 @@ class TimeDayGraph:
                 than pixels, how to resolve the multiple readings that correspond
                 to each pixel.
         """
+        df = df.copy()
+        
         if self.max_integral is None:
             self.max_integral = np.nanmax(df[data_col])
         

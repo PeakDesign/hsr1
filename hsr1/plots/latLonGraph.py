@@ -10,7 +10,7 @@ import numpy as np
 
 class LatLonGraph:
     def __init__(self, data):
-        self.data = data
+        self.data = data.copy()
     
     
     def bin_data(self, data, bins=None):

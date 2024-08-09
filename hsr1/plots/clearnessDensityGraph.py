@@ -59,6 +59,7 @@ class ClearnessDensityGraph:
             match_density: wether or not to match the density to the max_density variable
             flags: the flags for this specific graph
         """
+        df = df.copy()
         cmap = self.cmap
         
         bbox = axes.get_window_extent()

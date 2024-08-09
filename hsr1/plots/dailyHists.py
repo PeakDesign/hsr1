@@ -15,6 +15,7 @@ from hsr1.plots import graphUtils
 
 class DailyHists:
     def __init__(self, data, fig=None):
+        data = data.copy()
         data["pc_time_end_measurement"] = data["pc_time_end_measurement"].dt.tz_localize(None)
         dates = data["pc_time_end_measurement"].dt.date
         np_dates = dates.to_numpy()

@@ -46,13 +46,9 @@ class Graph:
                  **kwargs):
         """a general class for easy access to all the different graph options
         params:
-            data: to be used as a positional argument, as either a DBDriver or 
-                    a dataframe containing all the data(these can also be passed as keyword arguments),
-                    or a string of the database name
-            driver: to pass a db_driver object as a keyword argument
-            dataframe: to pass a dataframe of data as a keywork argument
-            deployment_metadata: to pass a dataframe of deployment metadata as a keyword argurment
-            accessory_data: to pass a dataframe of accessory_data as a keyword argurment
+            driver: a DBDriver object that contains the data that will be graphed,
+                if you want to plot data from an already existing dataframe, dont pass anything here
+                and pass dataframe=your_dataframe in each graph
             output_location: String filepath to a folder where all the graphs generated will be stored
             diffuse_name: what to call the diffuse on graph labels
             timezone: the desired timezone of the data, if loading from a database
@@ -70,6 +66,9 @@ class Graph:
         some functions that provide a simple wrapper around a class, and some that
         load data, do some data processing, and then use one of the plots from hsr1.plots
         """
+        if isinstance(driver, str):
+            print("db_name was passed")
+            driver = DBDriver(driver)
         self.driver = driver
         self.diffuse_name = diffuse_name
         self.output_location = output_location
@@ -102,13 +101,10 @@ class Graph:
         matplotlib.rc('figure', titlesize=BIGGER_SIZE)
     
     
-    
-    
     """--------------------
     line plots and presets:
     -------------------"""
-    def plot_daily_line(self, 
-                        columns:[str], period="monthly", 
+    def plot_daily_line(self, columns:[str], period="monthly", 
                         rows:int=None, days_in_row:int=None, 
                         flag:bool=False, 
                         ignore_zero:bool=False,
@@ -123,6 +119,9 @@ class Graph:
             flag: whether or not to superimpose flagged data onto the graphs
             ignore_zero: whether or not to plot zeros
             title_prefix: string that will display before the title
+            dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe columns must be columns+["pc_time_end_measurement"]
+            max_limit, min_limit: the limit of data that is plotted
         """
         print("plotting daily line graph")
         data_columns = columns.copy()
@@ -141,9 +140,9 @@ class Graph:
             data_columns += ["toa_hi", "sza"]
         
         ##### one liner to remove duplicates from a list while preserving the order
-        data_columns = list(dict.fromkeys(data_columns).keys())
+        data_columns = list(dict.fromkeys(data_columns).keys())+["pc_time_end_measurement"]
         
-        data = self.load_data(columns, dataframe)
+        data = self.load_data(data_columns, dataframe)
         
         if dni:
             data["direct_normal_integral"] = ((data["global_integral"]-data["diffuse_integral"])/np.cos(data["sza"]))
@@ -168,19 +167,21 @@ class Graph:
                         block=self.block)
         dp.plot_series(period, rows, days_in_row, data)
         
+        # if self.output_location is not None:
+        #     plt.savefig(self.output_location+"/" + ", ".join(columns) + " line.png")
         plt.show(block=self.block)
     
     def daily_integrals(self, period="monthly", rows=None, days_in_row=None, flag=True, dataframe=None):
         """daily plot preset of dni, ghi, and diffuse, also uses sza and toa_hi to flag data"""
         print("plotting daily integrals")
         columns = ["direct_normal_integral", "global_integral", "diffuse_integral"]
-        self.plot_daily_line(columns, period, rows, days_in_row, flag, "sunlight intensity in ", dataframe=dataframe)
+        self.plot_daily_line(columns, period, rows, days_in_row, flag, title_prefix="sunlight intensity in ", dataframe=dataframe)
     
     def daily_temps(self, period="monthly", rows=None, days_in_row=None, flag=True, dataframe=None):
         """daily plot preset of all different temperature measurements"""
         print("plotting daily temps")
         columns = ["T_CPU", "T_Bezel", "T_RH", "T_Baro"]
-        self.plot_daily_line(columns, period, rows, days_in_row, flag, True, "temperatures in ", dataframe=dataframe)
+        self.plot_daily_line(columns, period, rows, days_in_row, flag, True, title_prefix="temperatures in ", dataframe=dataframe)
     
     def daily_aod_cimel(self, aod_type:str="aod_microtops", wavelengths:list=None, 
                         period=21, rows=3, days_in_row=7, 
@@ -200,6 +201,9 @@ class Graph:
             lower_limit: the minimum value to display.
             clearsky_filter: which clearsky filter algorithm to use.
             clearsky_filter_kwargs: keyword arguments to pass to clearsky_filter.
+            dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                ["pc_time_end_measurement", "global_spectrum", "diffuse_spectrum", "sza", "sed", "global_integral", "diffuse_integral"]
         """
         print("plotting aod at cimel wavelengths")
         cimel_wavelengths=False
@@ -252,6 +256,9 @@ class Graph:
             columns: list of column headers that will be plotted
                     OR string of one column name
             title: the title of the plot
+            dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                columns+["pc_time_end_measurement"]
         """
         print("plotting daily histograms")
         if type(columns) == str:
@@ -262,6 +269,8 @@ class Graph:
         dh = DailyHists(data)
         dh.plot_hists(columns, title, **kwargs)
         
+        if self.output_location is not None:
+            plt.savefig(self.output_location+"/daily hist graph.png")
         plt.show(block=self.block)
     
     def voltage_hists(self, dataframe=None):
@@ -274,17 +283,21 @@ class Graph:
         dh = DailyHists(data)
         dh.plot_hists(columns, "Voltages (x1000)", ignore_zero=True)
         
+        if self.output_location is not None:
+            plt.savefig(self.output_location+"/voltage hist graph.png")
         plt.show(block=self.block)
         
     def pht_hists(self, dataframe=None):
         """daily histogram preset of pressure, humidity and temperature"""
-        print("plotting temperature histograms")
+        print("plotting temperature, pressure, and humidity histograms")
         columns = ["pressure", "rh", "baro_temp"]
         data = self.load_data(columns, dataframe)
         
         dh = DailyHists(data)
         dh.plot_hists(columns, "Pressure, humidity and temperature", ignore_zero=True)
         
+        if self.output_location is not None:
+            plt.savefig(self.output_location+"/pressure, humidity and temperature graph.png")
         plt.show(block=self.block)
     
     def current_hists(self, dataframe=None):
@@ -297,6 +310,8 @@ class Graph:
         dh = DailyHists(data)
         dh.plot_hists(columns, "Currents", ignore_zero=False)
         
+        if self.output_location is not None:
+            plt.savefig(self.output_location+"/currents hist graph.png")
         plt.show(block=self.block)
     
     
@@ -306,18 +321,23 @@ class Graph:
     
     def biggest_dips(self, n=15, cutoff_angle=np.radians(80), cutoff_wavelength=1000,
                       date_format:str="%y-%m-%d %H:%M",
-                      title=None, dataframe=None):
+                      dataframe=None):
         """whole dataset plot of the n biggest peaks for each measurement, looks like several horizontal lines
         params:
             n: the number of peaks that will be selected per measurement
             cutoff_angle = the maximum zenith angle included, used for excluding nighttime
             cutoff_wavelength: the maximum wavelength included
+            date_format: the format that dates will be displayed. in the same format as strftime
+                https://docs.python.org/3/library/datetime.html
+            dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                ["pc_time_end_measurement", "global_spectrum"]
         """
         print("plotting the biggest dips")
         if dataframe is None:
             dataframe = self.load_spectrum(cutoff_angle, **self.kwargs)
         
-        linearDipsGraph = LinearDipsGraph(block=self.block, output_location=self.output_location)
+        linearDipsGraph = LinearDipsGraph(block=self.block, output_location=self.output_location, title_prefix="full dataset ")
         linearDipsGraph.plot_n_biggest_dips(dataframe, n, cutoff_wavelength)
     
     def daily_biggest_dips(self, n:int=15, cutoff_angle:float=np.radians(80), 
@@ -329,6 +349,11 @@ class Graph:
             n: the number of peaks that will be selected per measurement
             cutoff_angle = the maximum zenith angle included, used for excluding nighttime
             cutoff_wavelength: the maximum wavelength included
+            date_format: the format that dates will be displayed. in the same format as strftime
+                https://docs.python.org/3/library/datetime.html
+            dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                ["pc_time_end_measurement", "global_spectrum"]
         """
         print("plotting the biggest dips in each day")
         if dataframe is None:
@@ -346,6 +371,9 @@ class Graph:
             stack_resolution: how to resolve conflicts where there are more readings than pixels
                 options="max", "mean", "min"
             max_integral: the max value that the colourmap extends over
+            dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                [column, "pc_time_end_measurement"]
         """
         print("plotting a time/day graph")
         columns = [column]+["pc_time_end_measurement"]
@@ -384,6 +412,9 @@ class Graph:
         
         params:
             column: the column that will be represented by the colourmap
+            dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                [column, "pc_time_end_measurement", "sza", "azimuth"]
         """
         # TODO: make accessory_data work
         # truncate dosent work, assumes 1min data
@@ -428,6 +459,9 @@ class Graph:
                 if None, no filtering is applied
             clearsky_filter_kwargs: keyword arguments to pass to the clearsky_filter method,
                 these will vary depending on which filtering method is used
+            dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                ["pc_time_end_measurement", "global_spectrum", "diffuse_spectrum", "sza", "sed", "global_integral", "diffuse_integral"]
         
         """
         print("plotting the aod each day")
@@ -441,6 +475,7 @@ class Graph:
         else:
             deployment_metadata = self.deployment_metadata
         
+        title=""
         spectrometer_average_period = 60
         if deployment_metadata is not None:
             title = deployment_metadata["deployment_description"][0] + "\n"
@@ -502,6 +537,11 @@ class Graph:
                 None: no normalisation
                 toa_integral: divided by the top of atmosphere integral
                 pvlib: normalises against a spectrum generated by pvlib
+            dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                ["gps_latitude", "gps_longitude", "gps_altitude", "global_integral", "diffuse_integral"]
+                and whatever column you are plotting. 
+                if plotting direct normal, ["global_spectrum", "diffuse_spectrum", "sza"] are also required
         """
         print("plotting the spectral intensity each day")
         spec_day = SpectrumGraph(cmap=self.jet_black_zero, timedelta=self.timedelta)
@@ -522,6 +562,7 @@ class Graph:
         else:
             deployment_metadata = self.deployment_metadata
         
+        title=""
         if deployment_metadata is not None:
             title = deployment_metadata["deployment_description"][0] + "\n"
             spec_day.spectrometer_average_period = int(deployment_metadata["spectrometer_average_period"][0])
@@ -620,6 +661,10 @@ class Graph:
             reference_labels: list of labels for the passed reference lines.
                 must be the the same length as reference_lines, use ""
                 if you dont want to label them all
+            title: the title of the plot
+            dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                ["pc_time_end_measurement", "global_spectrum"]
         """
         print("plotting dips summary")
         
@@ -653,7 +698,21 @@ class Graph:
     
     
     def plot_integral(self, flag=False, title="", max_integral=None, dataframe=None):
-        """plots a summary of the integral data in a dataset"""
+        """plots a summary of the integral data in a dataset
+        
+        params:
+            flag: when True, checks the data against the BSRN limits, and overlays
+                the implausible readings in pink. 
+            title: the title for the plot
+            max_integral: the upper limit when plotting integral values, on
+                the y-axes and on colourmaps.
+                if None, selects the largest value in global or dni.
+            dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                ["pc_time_end_measurement", "global_integral", "diffuse_integral", 
+                 "gps_latitude", "gps_longitude", "gps_altitude", 
+                 "sza", "azimuth", "toa_hi", "sed"]
+        """
         
         print("plotting summary")
         
@@ -800,6 +859,16 @@ class Graph:
             pressure, humidity and a comparison of the different temperature measurements
             voltage summary
             current summary
+        
+        params:
+            title: the title of the plot
+            dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                ["pc_time_end_measurement", "camera_temp"]
+            accessory_dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                ["pc_time_end_measurement", "StatusFlags", "RH", "Pressure", "T_Bezel", 
+                "T_Baro", "_15Vin", "Vcc", "I_Tot", "I_15VPC", "I_15VCAM","Latitude", "Longitude"]
         """
         
         print("plotting accessory_data")
@@ -977,6 +1046,16 @@ class Graph:
             a plot of gps age. log scale with linear segment
             plot of number of satelites in view
             plot of tilt: sqrt(pitch^2*roll^2)
+        
+        params:
+            title: the title of the plot
+            dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                ["pc_time_end_measurement", "camera_temp"]
+            accessory_dataframe: to plot the graph from an already generated dataset, 
+                pass it here, dataframe must have columns:
+                ["pc_time_end_measurement", "StatusFlags", "RH", "Pressure", "T_Bezel", 
+                "T_Baro", "_15Vin", "Vcc", "I_Tot", "I_15VPC", "I_15VCAM","Latitude", "Longitude"]
         """
         print("plotting GPS")
         ##### loading data from the database or from the provided dataframes
@@ -1182,15 +1261,12 @@ class Graph:
                 condition="sza < "+str(cutoff_angle[1]) + " AND sza > "+str(cutoff_angle[0])
                 spectrum = self.driver.db_load.load(["pc_time_end_measurement", "global_spectrum"], 
                                                     condition=condition, 
-                                                    timezone=self.timezone, 
                                                     **kwargs)
             else:
                 spectrum = self.driver.db_load.load(["pc_time_end_measurement", "global_spectrum"], 
-                                                    timezone=self.timezone, 
                                                     **kwargs)
         else:
             spectrum = self.driver.db_load.load(["pc_time_end_measurement", "global_spectrum"], 
-                                                timezone=self.timezone, 
                                                 condition="sza < "+str(cutoff_angle), 
                                                 **kwargs)
         
@@ -1203,10 +1279,10 @@ class Graph:
         """returns a dataframe with the requested columns. either from the passed dataframe
         or from the dbdriver if that is missing.
         """
-        columns = np.array(columns)
+        columns = np.array(columns + ["pc_time_end_measurement"])
         if dataframe is not None:
             if np.isin(columns, dataframe.columns).all():
-                return dataframe
+                return dataframe.copy()
         
         if self.driver is None:
             raise ValueError("database is None and not all the required columns were passed to dataframe")
