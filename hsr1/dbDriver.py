@@ -184,6 +184,14 @@ class DBDriver:
         
         deployment_metadata = self.load_metadata()
         
+        if sample_ids_to_add is None or len(sample_ids_to_add) == 0: 
+            if drop_existing:
+                sample_ids_to_add = self.db_load.load(["sample_id"], table="spectral_data")["sample_id"].values
+            else:
+                print("no sample_ids_to_add was provided and drop_existing=False, doing nothing")
+                return
+            
+        
         if drop_existing:
             self.db_store.drop_table("precalculated_values")
         
@@ -210,11 +218,15 @@ class DBDriver:
             data_to_calculate["sample_id"] = data_to_calculate.index
             data = data_to_calculate.reset_index(drop=True)
         
+        
+                
+        
         precalculated_values = p_calcs.calculate_all(data, method)
         
         precalculated_values = reformat().reset_index(precalculated_values, "pc_time_end_measurement")
+        # TODO: this dosent work if dataseries_id changes - need to check the dataseries_id for each sample_id
         precalculated_values["dataseries_id"] = spectral_data["dataseries_id"]
-        precalculated_values["sample_id"]  = spectral_data["sample_id"]
+        precalculated_values["sample_id"]  = sample_ids_to_add
         
         deployment_ids = {}
         timezones = {}

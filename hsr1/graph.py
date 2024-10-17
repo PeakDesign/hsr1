@@ -184,8 +184,8 @@ class Graph:
         self.plot_daily_line(columns, period, rows, days_in_row, flag, True, title_prefix="temperatures in ", dataframe=dataframe)
     
     def daily_aod_cimel(self, aod_type:str="aod_microtops", wavelengths:list=None, 
-                        period=21, rows=3, days_in_row=7, 
-                        upper_limit=2, lower_limit=0,
+                        period="monthly", rows=None, days_in_row=None, 
+                        upper_limit=1, lower_limit=0,
                         clearsky_filter:str="wood", clearsky_filter_kwargs:dict={},
                         dataframe=None):
         """daily plot of the aod at the wavelengths measured by cimel spectrometers
@@ -668,8 +668,10 @@ class Graph:
         """
         print("plotting dips summary")
         
-        columns = ["pc_time_end_measurement", "global_spectrum"]
+        columns = ["pc_time_end_measurement", "global_spectrum", "sza"]
         data = self.load_data(columns, dataframe)
+        
+        data = data[data["sza"] < cutoff_angle]
         
         dailyDipsSummary = DailyDipsSummary(self.timezone, reference_lines, reference_labels)
         fig = dailyDipsSummary.plot_daily_peaks_summary(data, n, cutoff_wavelength)
