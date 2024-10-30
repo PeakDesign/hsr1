@@ -196,12 +196,12 @@ class DBDriver:
             self.db_store.drop_table("precalculated_values")
         
         p_calcs = PreCalculations(deployment_metadata=deployment_metadata)
-        spectral_data = self.db_load.load(["pc_time_end_measurement", "sample_id", "dataseries_id"])
-        
+        spectral_data = self.db_load.load(["pc_time_end_measurement", "sample_id", "dataseries_id"], table="spectral_data")
 
         data = None
         try:
             data = self.db_load.load(p_calcs.requirements+["sample_id"])
+            data = data.drop_duplicates(subset="sample_id", ignore_index=True)
         except KeyError:
             data = pd.DataFrame()
             data["pc_time_end_measurement"] = spectral_data["pc_time_end_measurement"]
@@ -219,7 +219,6 @@ class DBDriver:
             data = data_to_calculate.reset_index(drop=True)
         
         
-                
         
         precalculated_values = p_calcs.calculate_all(data, method)
         

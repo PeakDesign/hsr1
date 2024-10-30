@@ -741,7 +741,7 @@ class Graph:
             requirements += new_requirements
         
         data = self.load_data(requirements, dataframe)
-    
+        
         data = data.drop_duplicates(["pc_time_end_measurement"])
         
         if "gps_longitude" in requirements and not "gps_longitude" in data.columns:
