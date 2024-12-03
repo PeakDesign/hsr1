@@ -216,6 +216,9 @@ class SqliteDBLoad():
                 column_list = "*"
             sql = "SELECT " + column_list + " FROM "+table+condition
             result = self.load_sql(sql)
+            if result is None:
+                raise ValueError("no data was returned by the query: "+sql)
+            
             if not result.empty:
                 result.columns = output_columns
         
@@ -289,7 +292,11 @@ class SqliteDBLoad():
         
         if time_condition == " WHERE ":
             time_condition = ""
-        
+
+        ##### check if there is a time condition(7 characters is " WHERE ")
+        elif len(time_condition)>7:
+            time_condition = time_condition[:-4]
+
         sql = "SELECT "+", ".join(columns)+" FROM raw_data" + time_condition
         
         load = SqliteDBLoad(self.db_name)

@@ -44,12 +44,16 @@ def read(hsr_path="", start_date="2000-01-01", end_date="2100-01-01", deployment
     gps_type = "gps"
     gps_file_name = "GPS.txt"
     
-    day_one = zipfile.ZipFile(os.path.join(hsr_path, hsr_dates[0]+".zip"))
-    if "AccessoryData.txt" in day_one.namelist():
-        gps_type = "accessory"
-        gps_file_name = "AccessoryData.txt"
-    
-    
+    filename = os.path.join(hsr_path, hsr_dates[0] + '.zip')
+    if os.path.isfile(filename):    # for data in zipfiles
+        day_one = zipfile.ZipFile(filename)
+        if "AccessoryData.txt" in day_one.namelist():
+            gps_type = "accessory"
+            gps_file_name = "AccessoryData.txt"
+    elif os.path.isdir(os.path.join(hsr_path, hsr_dates[0])):     # for data expanded into dated folders
+        if os.path.isfile(os.path.join(hsr_path, hsr_dates[0] + "/AccessoryData.txt")):
+            gps_type = "accessory"
+            gps_file_name = "AccessoryData.txt"
     
     m_Ed = []
     m_Eds = []
@@ -59,7 +63,7 @@ def read(hsr_path="", start_date="2000-01-01", end_date="2100-01-01", deployment
     
     
     for hsr_date in hsr_dates:
-        print("reading "+hsr_date+".zip")
+        print("reading "+hsr_date)
         dfTemp = ImportHSRFiles.open_hsr_file(hsr_path, hsr_date, 'Total.txt')
         if len(dfTemp): 
             m_Ed.append( dfTemp)
@@ -77,15 +81,22 @@ def read(hsr_path="", start_date="2000-01-01", end_date="2100-01-01", deployment
             m_Gps.append(dfTemp)
     
     
-    ed = pd.concat(m_Ed)
-    eds = pd.concat(m_Eds)
-    summary = pd.concat(m_Summary)  
-    ind_ch = pd.concat(m_IndCh)
-    
-    gps = None
+    if len(m_Ed): 
+        ed = pd.concat(m_Ed)
+    else: ed = None
+    if len(m_Eds):
+        eds = pd.concat(m_Eds)
+    else: eds = None
+    if len(m_Summary): 
+        summary = pd.concat(m_Summary)  
+    else: summary = None
+    if len(m_IndCh): 
+        ind_ch = pd.concat(m_IndCh)
+    else: ind_ch = None
     if len(m_Gps):
         gps = pd.concat(m_Gps)
-    
+    else: gps = None
+        
     reformatter = reformatData.ReformatData()
     
     reformatted = reformatter.reformat_data([ed, eds, summary, ind_ch, gps], deployment_metadata_filepath, gps_type)
@@ -116,15 +127,22 @@ def read_raw_txt(hsr_path="", start_date="2000-01-01", end_date="2100-01-01", de
     
     filenames = []
     for hsr_date in hsr_dates:
-        zip_obj = zipfile.ZipFile(os.path.join(hsr_path, hsr_date)+".zip")
-        filenames = []
-        for name in zip_obj.namelist():
-            if "Raw" in name and name not in filenames:
-                filenames.append(name)
-    
+        filename = os.path.join(hsr_path, hsr_date + '.zip')
+        if os.path.isfile(filename):    # for data in zipfiles
+            zip_obj = zipfile.ZipFile(filename)
+            for name in zip_obj.namelist():
+                if "Raw" in name and name not in filenames:
+                    filenames.append(name)
+        elif os.path.isdir(os.path.join(hsr_path, hsr_date)):     # for data expanded into dated folders
+            for name in os.listdir(os.path.join(hsr_path, hsr_date)):
+                if "Raw" in name and name not in filenames:
+                    filenames.append(name)
+
+            
     dfs = [[] for i in range(len(filenames))]
     
     for hsr_date in hsr_dates:
+        print("reading "+hsr_date)
         
         for i, filename in enumerate(filenames):
             df_temp = ImportHSRFiles.open_hsr_file(hsr_path, hsr_date, filename, Raw=True)

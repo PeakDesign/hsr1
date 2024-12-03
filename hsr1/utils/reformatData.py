@@ -24,26 +24,28 @@ class ReformatData():
             spectral_data, precalculated_values, system_data, deployment_metadata
         """
         print("reformatting data")
-        
-        if gps_type is None:
-            columns = dataframes[4].columns
-            if len(columns) >= 12:
-                print("no gps_type passed, assuming accessory")
-                gps_type = "accessory"
-            else:
-                print("no gps_type passed, assuming gps")
-                gps_type = "gps"
-        
         deployment_metadata = self.reformat_deployment_metadata(deployment_metadata_file_path)
         spectral_data = self.reformat_spectral_data(dataframes[:3])
         system_data = None
         accessory_data = None
-        if dataframes[4] is not None:
-            accessory_data = None
+        
+        if dataframes[4] is None:       # for datasets with no GPS, create a dummy from default values
+            print("No GPS data found")
+            system_data=None
+        else:
+            gps_data = dataframes[4]
+            if gps_type is None:        # check gps_type is set correctly
+                columns = gps_data.columns
+                if len(columns) > 12:
+                    print("no gps_type passed, assuming accessory")
+                    gps_type = "accessory"
+                else:
+                    print("no gps_type passed, assuming gps")
+                    gps_type = "gps"
             if gps_type == "accessory":
-                accessory_data = self.reformat_accessory_data(dataframes[4])
-            
-            system_data = self.reformat_system_data(dataframes[4], gps_type, accessory_data, spectral_data.index)
+                accessory_data = self.reformat_accessory_data(gps_data)
+
+            system_data = self.reformat_system_data(gps_data, gps_type, accessory_data, spectral_data.index)
             
             
         if system_data is not None:
