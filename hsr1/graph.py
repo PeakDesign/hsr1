@@ -834,7 +834,7 @@ class Graph:
             raise e
         except Exception as e:
             print("failed to graph elevation/azimuth summary\n"+str(e))
-        
+
         flags = flagData.flag(data, ignore_nights=True)
         
         try:

@@ -404,6 +404,7 @@ class ReformatData():
         for col in ["gps_latitude", "gps_longitude", "gps_altitude", "pressure", "baro_temp", "rh", "rh_temp"]:
             agg_dict[col] = "mean"
         
+
         averaged_system_data = system_data.groupby(spectral_timestamps_int[np.clip(np.digitize(system_timestamps, spectral_timestamps_int, right=True), 0, len(spectral_timestamps)-1)])#.agg(agg_dict)
         averaged_system_data = averaged_system_data.agg(agg_dict)
         

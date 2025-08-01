@@ -98,12 +98,11 @@ class ClearnessDensityGraph:
         
         
         
-        
         if self.flag_all:
             flag_text = str(round((sum(flags.any(axis=1))/len(df))*100, 1)) + "%"
             axes.text(0,0.88*axes.set_ylim()[1], flag_text)
             flags = self.flags
-        
+            
         if flags is not None:
             colordict = {
                 "red":((0,1,1), (1,1,1)),
@@ -113,10 +112,9 @@ class ClearnessDensityGraph:
             flagged_data = df.loc[flags.any(axis="columns")]
             if len(flagged_data) > 0:
                 flagged_hist, *_ = np.histogram2d(flagged_data[x_axis], flagged_data[y_axis], bins=bins, range=axes_range)
-                axes.imshow(np.flip(flagged_hist.T, 0), aspect="auto", interpolation="none", norm=matplotlib.colors.LogNorm(vmin=0, vmax=1), cmap=flag_cmap, extent=extent)
-        
+                flag_im = axes.imshow(np.flip(flagged_hist.T, 0), aspect="auto", interpolation="none", norm=matplotlib.colors.LogNorm(vmin=0.001, vmax=1), cmap=flag_cmap, extent=extent)
+
         axes.set_xticks(xticks, xlabels)
-        
         return im
                 
     
