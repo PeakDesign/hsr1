@@ -52,3 +52,15 @@ class TestReadData:
         dates = hsr1.utils.HSRFunc.Get_hsr_Dates(data_filepath, end_date="2025-03-20")
 
         assert(dates[-1] == "2025-03-20")
+
+
+    def test_get_hsr_path_with_just_none_date(self):
+
+        data_filepath = "tests/res/NOAA 2025"
+        deployment_metadata_filepath = "tests/res/NOAA 2025/HSR1-009 NOAA 2025 Deployment.ini"
+
+        database_location = "tests/temp/databases/my_database.db"
+
+        dates = hsr1.utils.HSRFunc.Get_hsr_Dates(data_filepath, "askjdnbaskj", None)
+
+        assert(dates[0] == "2025-03-20" and dates[-1] == "2025-03-22")

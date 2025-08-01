@@ -376,7 +376,7 @@ def calculate_clearsky_filter(data:pd.DataFrame, global_spectrum=None, diffuse_s
 
 
 
-def Get_hsr_Dates(hsr_path, start_date, end_date):
+def Get_hsr_Dates(hsr_path, start_date="1971-01-01", end_date="2500-01-01"):
 # Get a list of hsr datafiles in the root folder
 
     folderlist = None
@@ -394,20 +394,26 @@ def Get_hsr_Dates(hsr_path, start_date, end_date):
             res = False
             
     date_dict = dict.fromkeys(datelist, True)     # removes any duplicate dates
-    try: 
         # check dates are in range
-            for i, name in enumerate(date_dict):
-                if len(start_date):
-                    if dt.datetime.strptime(name, '%Y-%m-%d') < dt.datetime.strptime(start_date[:10], '%Y-%m-%d'):   
-                        date_dict[name] = False
-                if len(end_date):
-                    if dt.datetime.strptime(name, '%Y-%m-%d') > dt.datetime.strptime(end_date[:10], '%Y-%m-%d'):   
-                        date_dict[name] = False
-               
-    except:
-        print('Error checking dates')
-        print("start_date: "+str(start_date))
+    for i, name in enumerate(date_dict):
+        try:
+            if len(start_date):
+                if dt.datetime.strptime(name, '%Y-%m-%d') < dt.datetime.strptime(start_date[:10], '%Y-%m-%d'):   
+                    date_dict[name] = False
+
+        except:
+            print('Error checking dates')
+            print("start_date: "+str(start_date))
         print("end_date: "+str(end_date))
+        try:
+            if len(end_date):
+                if dt.datetime.strptime(name, '%Y-%m-%d') > dt.datetime.strptime(end_date[:10], '%Y-%m-%d'):   
+                    date_dict[name] = False
+               
+        except:
+            print('Error checking dates')
+            print("start_date: "+str(start_date))
+            print("end_date: "+str(end_date))
     
     #print (date_dict)
     hsr_dates  = [k for k, v in date_dict.items() if v == True]
