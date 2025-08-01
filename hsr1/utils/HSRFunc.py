@@ -120,25 +120,44 @@ def calc_aot_direct(ed, eds, sza, e_solar=None, sed=None, aod_type=["total_od", 
     
     sun = ephem.Sun()
     
+    # ## OLD
+    # tau_r = calc_rayleigh(ed.columns.astype(float))
+    # tau_t = np.nan*np.ones([len(edni),len(edni.T)]) # total OT 
+    # tau_a = np.nan*np.ones([len(edni),len(edni.T)]) # aerosol OT 
+    # tau_corr = np.nan*np.ones([len(edni),len(edni.T)]) # corrected OT
+    #
+    # wl_e = np.array([440, 500, 675, 870, 1020]) #  empirical correction coefficients (Wood 2017)
+    # offset_am = np.array([0.0097, 0.0177, -0.0033, -0.0067, -0.0117])
+    # offset_wl = np.array([0.0244, 0.0260, 0.0182, 0.0124, 0.0457])
+    # slope_wl = np.array([1.2701, 1.2893, 1.3549, 1.4522, 1.5237])
+    #
+    # wl = ed.columns.astype(float)
+    # offset_am = interpolate.interp1d(wl_e, offset_am, kind = 'linear', axis = 0, fill_value = "extrapolate") # interpolate to wl range of hsr (piecewise linear)
+    # offset_wl = interpolate.interp1d(wl_e, offset_wl, kind = 'linear', axis = 0, fill_value = "extrapolate")(wl) # linearly extrapolated outside wl range
+    # slope_wl = interpolate.interp1d(wl_e, slope_wl, kind = 'linear', axis = 0, fill_value = "extrapolate")(wl)
+    
+
+    ## NEW
     tau_r = calc_rayleigh(ed.columns.astype(float))
     tau_t = np.nan*np.ones([len(edni),len(edni.T)]) # total OT 
     tau_a = np.nan*np.ones([len(edni),len(edni.T)]) # aerosol OT 
     tau_corr = np.nan*np.ones([len(edni),len(edni.T)]) # corrected OT
     
-    wl_e = np.array([440, 500, 675, 870, 1020]) #  empirical correction coefficients (Wood 2017)
+    am_e = np.array([1, 2, 3, 6, 10])
     offset_am = np.array([0.0097, 0.0177, -0.0033, -0.0067, -0.0117])
+    offset_am = interpolate.interp1d(am_e, offset_am, kind = 'linear', axis = 0, fill_value = "extrapolate") # interpolate to wl range of hsr (piecewise linear)
+    
+    wl_e = np.array([440, 500, 675, 870, 1020]) #  empirical correction coefficients (Wood 2017)
     offset_wl = np.array([0.0244, 0.0260, 0.0182, 0.0124, 0.0457])
     slope_wl = np.array([1.2701, 1.2893, 1.3549, 1.4522, 1.5237])
     
     wl = ed.columns.astype(float)
-    offset_am = interpolate.interp1d(wl_e, offset_am, kind = 'linear', axis = 0, fill_value = "extrapolate") # interpolate to wl range of hsr (piecewise linear)
     offset_wl = interpolate.interp1d(wl_e, offset_wl, kind = 'linear', axis = 0, fill_value = "extrapolate")(wl) # linearly extrapolated outside wl range
     slope_wl = interpolate.interp1d(wl_e, slope_wl, kind = 'linear', axis = 0, fill_value = "extrapolate")(wl)
-    
+
+
     daytime = sza.values < np.radians(90)
     daytime = daytime[:, 0]
-    
-    
     
     if sed is None:
         sed = np.full(len(edni), np.nan)

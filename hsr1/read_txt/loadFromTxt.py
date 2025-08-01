@@ -39,7 +39,7 @@ def read(hsr_path="", start_date="2000-01-01", end_date="2100-01-01", deployment
     
     hsr_dates  = hsr_func.Get_hsr_Dates(hsr_path, start_date, end_date)
     hsr_dates.sort()
-    print(hsr_dates)
+
     if len(hsr_dates) == 0:
         raise ValueError(f"No data could be found for the supplied dates: {start_date}, {end_date}")
     
