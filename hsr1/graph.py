@@ -145,7 +145,9 @@ class Graph:
         data = self.load_data(data_columns, dataframe)
         
         if dni:
-            data["direct_normal_integral"] = ((data["global_integral"]-data["diffuse_integral"])/np.cos(data["sza"]))
+            # data["direct_normal_integral"] = ((data["global_integral"]-data["diffuse_integral"])/np.cos(data["sza"]))
+            data = HsrFunc.add_direct_normal_column_to_df(data)
+
         
         if ignore_zero:
             data = data.replace({0:np.nan})
@@ -160,6 +162,9 @@ class Graph:
             print("No Deployment metadata available for the title")
         else:
             title_prefix = deployment_metadata["deployment_description"][0] + "\n" + title_prefix
+
+        if max_limit is None:
+            max_limit = np.nanmax(data[columns].values)*1.1
         
         dp = DailyPlots(columns, data, title_prefix, 
                         output_location=self.output_location, flag=flag, 
@@ -753,7 +758,8 @@ class Graph:
         
         
         ##### filling in columns that arent in the database
-        data["direct_normal_integral"] = ((data["global_integral"]-data["diffuse_integral"])/np.cos(data["sza"]))
+        # data["direct_normal_integral"] = ((data["global_integral"]-data["diffuse_integral"])/np.cos(data["sza"]))
+        data = HsrFunc.add_direct_normal_column_to_df(data)
         
         deployment_metadata = None
         if self.deployment_metadata is None and self.driver is not None:

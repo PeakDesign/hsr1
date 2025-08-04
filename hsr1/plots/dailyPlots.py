@@ -47,7 +47,8 @@ class DailyPlots:
         df = data.copy()
         
         df["pc_time_end_measurement"] = pd.to_datetime(df["pc_time_end_measurement"])
-        axes.set_xlim(min(df["pc_time_end_measurement"]), max(df["pc_time_end_measurement"]))
+        if len(df) > 0:
+            axes.set_xlim(min(df["pc_time_end_measurement"]), max(df["pc_time_end_measurement"]))
         for column in self.columns:
             label_column = column
             if label_column[0] == "_":
@@ -176,14 +177,55 @@ class DailyPlots:
         df = data.copy()
         
         ##### dosent include last day, stops at the start of it
-        all_seconds = [pd.date_range(pd.Timestamp(row[0]), pd.Timestamp(row[-1]) + pd.Timedelta(1, "day"), freq="min") for row in row_dates]
-        
-        all_seconds_dfs = [pd.DataFrame(row, columns=["pc_time_end_measurement"]) for row in all_seconds]
+        first_timestamp_each_row = [pd.Timestamp(str(row[0])+" 00:00:00").to_numpy() for row in row_dates]
+        # last_timestamp_each_row = [(pd.Timestamp(str(row[-1])+" 00:00:00") + pd.Timedelta(1, "day")).to_numpy() for row in row_dates]
+        last_timestamp_each_row = [(pd.Timestamp(str(row[-1])+" 23:59:00")).to_numpy() for row in row_dates]
+        # all_seconds = [pd.date_range(pd.Timestamp(row[0]), pd.Timestamp(row[-1]) + pd.Timedelta(1, "day"), freq="min") for row in row_dates]
+        #
+        # all_seconds_dfs = [pd.DataFrame(row, columns=["pc_time_end_measurement"]) for row in all_seconds]
         
         df["pc_time_end_measurement"] = df["pc_time_end_measurement"].dt.tz_localize(None)
-                
+        
+        
+        # fill in nan values where data is missing to stop lines being drawn across gaps
+        min_gap = np.min(np.diff(df["pc_time_end_measurement"]))
+
+        # smallest min_gap is a minute, so gaps longer than 2mins will be detected
+        min_gap = np.max((min_gap, 60_000_000_000))
+
+        # a multiplier that determines how many times larger a gap has to be than the smallest gap to 
+        # be counted as a gap and have a nan value filled in it
+        gap_threshold = 2
+        # index of all the timestamps that are before a gap
+        gaps_idx = np.diff(df["pc_time_end_measurement"]) > min_gap*gap_threshold
+
+        # appending false to the end because len(diff) is 1 less than len(arr)
+        # appended to end because there is never a gap after the last value
+        gaps_idx = np.array(list(gaps_idx) + [False])
+
+        print(gaps_idx)
+        print(len(gaps_idx))
+        print(min_gap)
+
+        new_nan_timestamps = df.loc[gaps_idx, "pc_time_end_measurement"] + min_gap
+        new_nan_timestamps = new_nan_timestamps.values
+
+        new_nan_timestamps = np.concat((new_nan_timestamps, np.array(first_timestamp_each_row)))
+        new_nan_timestamps = np.concat((new_nan_timestamps, np.array(last_timestamp_each_row)))
+
+        nan_df = pd.DataFrame(data=np.nan*np.ones((len(new_nan_timestamps), len(df.columns))), columns=df.columns)
+        nan_df["pc_time_end_measurement"] = new_nan_timestamps
+        
+        print(df["pc_time_end_measurement"])
+
+        df = pd.concat((df, nan_df), ignore_index=True)
+        df = df.sort_values(by="pc_time_end_measurement")
+
+        print(df["pc_time_end_measurement"])
+
         row_dfs = [df.loc[np.isin(df["pc_time_end_measurement"].dt.date, row)] for row in row_dates]
-        row_dfs = [pd.merge(all_seconds_dfs[i], row_dfs[i], on="pc_time_end_measurement", how="outer") for i in range(len(all_seconds_dfs))]
+        # row_dfs = [pd.merge(all_seconds_dfs[i], row_dfs[i], on="pc_time_end_measurement", how="outer") for i in range(len(all_seconds_dfs))]
+
         
         full_title = self.title_prefix+title
         fig, axes = plt.subplots(len(row_dates), figsize=(16.5, 11.7))

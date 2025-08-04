@@ -18,6 +18,26 @@ import zipfile
 
 
 
+def add_direct_normal_column_to_df(df, cutoff=88):
+    """
+    adds an aditional column to a passed dataframe with the calculated DNI. 
+    dataframe must have 'global_integral', 'diffuse_integral' and 'sza' columns
+
+    params:
+        df: dataframe with the required columns
+        cutoff: the zenith angle below which the dni is set to 0. this is to 
+        avoid dividing by near 0 close to sunrise/sunset.
+
+    returns:
+        dataframe with the same structure as the input dataframe but with an extra column.
+    """
+    if "global_integral" not in df.columns or "diffuse_integral" not in df.columns or "sza" not in df.columns:
+        raise ValueError("to calculate direct_normal the dataframe must contain 'global_integral', 'diffuse_integral' and 'sza'")
+
+    df["direct_normal_integral"] = (df["global_integral"]-df["diffuse_integral"])/np.cos(df["sza"])
+    df.loc[(df["sza"] > np.radians(cutoff)).values, "direct_normal_integral"] = 0
+
+    return df
 
 
 def calc_direct_normal_spectrum(global_spectrum, diffuse_spectrum, sza):
