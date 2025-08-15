@@ -8,10 +8,6 @@ class TestReadData:
         data_filepath = "tests/res/NOAA 2025"
         deployment_metadata_filepath = "tests/res/NOAA 2025/HSR1-009 NOAA 2025 Deployment.ini"
 
-        database_location = "tests/temp/databases/my_database.db"
-
-        db_driver = hsr1.DBDriver(database_location)
-
         data = hsr1.read_txt.read(data_filepath, deployment_metadata_filepath=
                                   deployment_metadata_filepath)
 
@@ -23,9 +19,6 @@ class TestReadData:
     def test_get_hsr_path_with_normal_data(self):
 
         data_filepath = "tests/res/NOAA 2025"
-        deployment_metadata_filepath = "tests/res/NOAA 2025/HSR1-009 NOAA 2025 Deployment.ini"
-
-        database_location = "tests/temp/databases/my_database.db"
 
         dates = hsr1.utils.HSRFunc.Get_hsr_Dates(data_filepath, "2025-03-20", "2025-03-21")
 
@@ -34,9 +27,6 @@ class TestReadData:
     def test_get_hsr_path_with_just_start_date(self):
 
         data_filepath = "tests/res/NOAA 2025"
-        deployment_metadata_filepath = "tests/res/NOAA 2025/HSR1-009 NOAA 2025 Deployment.ini"
-
-        database_location = "tests/temp/databases/my_database.db"
 
         dates = hsr1.utils.HSRFunc.Get_hsr_Dates(data_filepath, "2025-03-20")
 
@@ -45,9 +35,6 @@ class TestReadData:
     def test_get_hsr_path_with_just_end_date(self):
 
         data_filepath = "tests/res/NOAA 2025"
-        deployment_metadata_filepath = "tests/res/NOAA 2025/HSR1-009 NOAA 2025 Deployment.ini"
-
-        database_location = "tests/temp/databases/my_database.db"
 
         dates = hsr1.utils.HSRFunc.Get_hsr_Dates(data_filepath, end_date="2025-03-20")
 
@@ -57,9 +44,6 @@ class TestReadData:
     def test_get_hsr_path_with_just_none_date(self):
 
         data_filepath = "tests/res/NOAA 2025"
-        deployment_metadata_filepath = "tests/res/NOAA 2025/HSR1-009 NOAA 2025 Deployment.ini"
-
-        database_location = "tests/temp/databases/my_database.db"
 
         dates = hsr1.utils.HSRFunc.Get_hsr_Dates(data_filepath, "askjdnbaskj", None)
 

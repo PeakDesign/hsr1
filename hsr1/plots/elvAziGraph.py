@@ -113,10 +113,16 @@ class ElvAziGraph:
         
         
         if self.flags is not None:
+            # colordict = {
+            #     "red":((0,1,1), (1,1,1)),
+            #     "green":((0,1,1), (1,0,0)),
+            #     "blue":((0,1,1), (1,1,1))}
+        
             colordict = {
                 "red":((0,1,1), (1,1,1)),
                 "green":((0,1,1), (1,0,0)),
-                "blue":((0,1,1), (1,1,1))}
+                "blue":((0,1,1), (1,1,1)),
+                "alpha":((0, 0, 0), (1, 1, 1))}
             flag_cmap = LinearSegmentedColormap("LinearCmap", colordict)
             
             any_flags = pd.DataFrame()
@@ -133,7 +139,7 @@ class ElvAziGraph:
             ##### alpha controls the transparancy of the image, this sets alpha to be opaque when flagged, and transparent when not
             ##### removes noise on the original graph
             alpha = new_df.values.astype(float)
-            im = axes.imshow(new_df, aspect="auto", norm=matplotlib.colors.LogNorm(vmin=0, vmax=1), alpha=alpha, interpolation="none", cmap=flag_cmap, extent=extent)
+            im = axes.imshow(new_df, aspect="auto", alpha=alpha, interpolation="none", cmap=flag_cmap, extent=extent)
         
         
         ylim = axes.get_ylim()

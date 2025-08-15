@@ -415,27 +415,25 @@ def Get_hsr_Dates(hsr_path, start_date="1971-01-01", end_date="2500-01-01"):
             
     date_dict = dict.fromkeys(datelist, True)     # removes any duplicate dates
         # check dates are in range
+    error = False
     for i, name in enumerate(date_dict):
         try:
             if len(start_date):
                 if dt.datetime.strptime(name, '%Y-%m-%d') < dt.datetime.strptime(start_date[:10], '%Y-%m-%d'):   
                     date_dict[name] = False
-
         except:
-            print('Error checking dates')
-            print("start_date: "+str(start_date))
-        print("end_date: "+str(end_date))
+            error = True
         try:
             if len(end_date):
                 if dt.datetime.strptime(name, '%Y-%m-%d') > dt.datetime.strptime(end_date[:10], '%Y-%m-%d'):   
                     date_dict[name] = False
-               
         except:
-            print('Error checking dates')
-            print("start_date: "+str(start_date))
-            print("end_date: "+str(end_date))
+            error = True
+    if error:
+        print("error reading dates")
+        print(f"start_date = {start_date}")
+        print(f"end_date = {end_date}")
     
-    #print (date_dict)
     hsr_dates  = [k for k, v in date_dict.items() if v == True]
     return hsr_dates
 

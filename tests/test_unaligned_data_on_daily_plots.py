@@ -23,6 +23,8 @@ class TestUnalignedDataOnDailyPlots:
         g = hsr1.Graph(db_driver, timezone="00:00", output_location="tests/temp/plots", block=True)
 
         g.daily_integrals()
+
+        os.remove(database_location)
     
 
     def test_should_plot_non_minute_aligned_data_with_gaps(self):
@@ -65,3 +67,5 @@ class TestUnalignedDataOnDailyPlots:
         g = hsr1.Graph(db)
         g.daily_integrals()
         g.daily_temps()
+
+        os.remove(db_name)

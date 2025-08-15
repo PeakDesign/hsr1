@@ -47,7 +47,6 @@ class ReformatData():
 
             system_data = self.reformat_system_data(gps_data, gps_type, accessory_data, spectral_data.index)
             
-            
         if system_data is not None:
             if deployment_metadata["mobile"].iloc[0]:
                 aux_average_period = int(deployment_metadata["aux_average_period"].iloc[0])
@@ -129,6 +128,11 @@ class ReformatData():
             spectral_data: dataframe of same structure as database
         """
         print("reformatting spectral data")
+
+        if dataframes[0] is None or dataframes[1] is None or dataframes[2] is None:
+            print("missing spectral data, skipping table")
+            return pd.DataFrame()
+
         ed:pd.DataFrame = dataframes[0]
         eds:pd.DataFrame = dataframes[1]
         summary:pd.DataFrame = dataframes[2]

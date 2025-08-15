@@ -106,13 +106,15 @@ class ClearnessDensityGraph:
         if flags is not None:
             colordict = {
                 "red":((0,1,1), (1,1,1)),
-                "green":((0,1,1), (1,0,0)),
-                "blue":((0,1,1), (1,1,1))}
+                "green":((0,1,1), (0.1, 0, 0), (1,0,0)),
+                "blue":((0,1,1), (1,1,1)),
+                "alpha":((0, 0, 0), (0.1, 1, 1), (1, 1, 1))}
             flag_cmap = LinearSegmentedColormap("LinearCmap", colordict)
             flagged_data = df.loc[flags.any(axis="columns")]
             if len(flagged_data) > 0:
                 flagged_hist, *_ = np.histogram2d(flagged_data[x_axis], flagged_data[y_axis], bins=bins, range=axes_range)
-                flag_im = axes.imshow(np.flip(flagged_hist.T, 0), aspect="auto", interpolation="none", norm=matplotlib.colors.LogNorm(vmin=0.001, vmax=1), cmap=flag_cmap, extent=extent)
+                # flag_im = axes.imshow(np.flip(flagged_hist.T, 0), aspect="auto", interpolation="none", norm=matplotlib.colors.LogNorm(vmin=0.001, vmax=1), cmap=flag_cmap, extent=extent)
+                flag_im = axes.imshow(np.flip(flagged_hist.T, 0), aspect="auto", interpolation="none", cmap=flag_cmap, extent=extent)
 
         axes.set_xticks(xticks, xlabels)
         return im

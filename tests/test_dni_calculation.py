@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -55,3 +57,5 @@ class TestDniCalculation:
         g.plot_daily_line(columns=["global_integral", "diffuse_integral", "direct_normal_integral"])
         g.plot_integral()
         plt.show()
+
+        os.remove(database_location)

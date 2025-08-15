@@ -1123,7 +1123,18 @@ class Graph:
         gps_times = data["gps_time"].copy()
         gps_times[zero_times] = np.nan
         ##### converts gps_time and pc time to an integer number of seconds
-        gps_time_index = pd.DatetimeIndex(gps_times, dtype="datetime64[s]")
+        # errors when invalid date. could manually filter each date and check
+        #   what to do with erros (drop row, default time, halfway between P&N?)
+        # can just fill with nat and propogate
+        filtered_gps_times = []
+        for gps_time in gps_times:
+            try:
+                datetime_string = datetime.strptime(gps_time, '%Y-%m-%d %H:%M:%S')
+                filtered_gps_times.append(datetime_string)
+            except:
+                filtered_gps_times.append(np.nan)
+
+        gps_time_index = pd.DatetimeIndex(filtered_gps_times, dtype="datetime64[s]")
         gps_time_int = gps_time_index.to_numpy().astype(float)
         gps_time_int[zero_times] = np.nan
         

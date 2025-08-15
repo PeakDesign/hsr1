@@ -203,9 +203,7 @@ class DailyPlots:
         # appended to end because there is never a gap after the last value
         gaps_idx = np.array(list(gaps_idx) + [False])
 
-        print(gaps_idx)
-        print(len(gaps_idx))
-        print(min_gap)
+
 
         new_nan_timestamps = df.loc[gaps_idx, "pc_time_end_measurement"] + min_gap
         new_nan_timestamps = new_nan_timestamps.values
@@ -216,10 +214,9 @@ class DailyPlots:
         nan_df = pd.DataFrame(data=np.nan*np.ones((len(new_nan_timestamps), len(df.columns))), columns=df.columns)
         nan_df["pc_time_end_measurement"] = new_nan_timestamps
         
-        print(df["pc_time_end_measurement"])
-
         df = pd.concat((df, nan_df), ignore_index=True)
         df = df.sort_values(by="pc_time_end_measurement")
+        
 
         print(df["pc_time_end_measurement"])
 

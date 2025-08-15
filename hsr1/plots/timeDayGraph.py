@@ -137,7 +137,8 @@ class TimeDayGraph:
             colordict = {
                 "red":((0,1,1), (1,1,1)),
                 "green":((0,1,1), (1,0,0)),
-                "blue":((0,1,1), (1,1,1))}
+                "blue":((0,1,1), (1,1,1)),
+                "alpha":((0, 0, 0), (1, 1, 1))}
             flag_cmap = LinearSegmentedColormap("LinearCmap", colordict)
             
             ##### same process as the data graph but with the flagged data
@@ -150,7 +151,7 @@ class TimeDayGraph:
             
             new_flag_df = new_flag_df.fillna(0)
             
-            image = axes.imshow(new_flag_df, aspect="auto", norm=matplotlib.colors.LogNorm(vmin=0, vmax=1), cmap=flag_cmap, interpolation="none", extent=extent)
+            image = axes.imshow(new_flag_df, aspect="auto", cmap=flag_cmap, interpolation="none", extent=extent)
             
         
         xticks, labels = graphUtils.calculate_date_labels(df[time_col], axes.get_xlim())
@@ -161,8 +162,8 @@ class TimeDayGraph:
         axes.set_xticks(xticks, labels)
         axes.set_yticks(np.arange(0, 25, 6))
         
-        if show_cbar:
-            self.fig.colorbar(image, ax=axes, pad=0)
+        # if show_cbar:
+        #     self.fig.colorbar(image, ax=axes, pad=0)
     
     
     def ghi(self, axes, df, sunrise_sunset=None, 
