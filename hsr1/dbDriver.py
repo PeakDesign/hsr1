@@ -74,7 +74,7 @@ class DBDriver:
     def combine_database_folder(self, folder, delete=False):
         self.db_store.combine_database_folder(folder, delete)
     
-    def store_raw(self, dfs, deployment_metadata):
+    def store_raw(self, dfs, deployment_metadata=None):
         self.db_store.store_raw(dfs, deployment_metadata)
     
     def load_table_names(self) -> pd.DataFrame:

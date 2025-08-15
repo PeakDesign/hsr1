@@ -111,16 +111,28 @@ class SqliteDBStore():
             print("time to precalculate: ", time.perf_counter()-start_time)
     
     
-    def store_raw(self, dfs, deployment_metadata):
+    def store_raw(self, dfs, deployment_metadata=None):
         """stores raw data to the database
         
         params:
             dfs: tuple of dataframes, one dataframe per channel
+                alternatively, when deployment metadata is None, a tuple containing:
+                    (tuple of dfs which is the same as described above, and deployment_metadata dataframe.)
+                this allows both parameters to be passed as one, which is the same format as read_txt.read_raw_txt outputs
             deployment_metadata: dataframe with one row, containing the deployment metadata for the dataseries being stored
+                alternatively, None if the deployment metadata is being passed in the dfs parameter.
         
         if no raw data already exists, creates a new table, "raw_data" which stores spectral data like in the spectral_data
         table, with each reading containing a blob that can be decoded to a spectral array
         """
+
+        # handling two args for dfs and deployment metadata or a tuple of both
+        if deployment_metadata is None:
+            if type(dfs[1]) == pd.DataFrame and type(dfs[0]) == list:
+                deployment_metadata = dfs[1]
+                dfs = dfs[0]
+
+
         table_names = ["channel_"+str(i) for i in range(len(dfs))]
         
         big_df = pd.DataFrame()
