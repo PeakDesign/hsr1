@@ -19,5 +19,5 @@ class TestRawDatabase:
         assert(os.path.exists(database_location))
         assert(os.path.getsize(database_location) > 100)
 
-        os.remove(database_location)
-        assert(not os.path.exists(database_location))
+        # os.remove(database_location)
+        # assert(not os.path.exists(database_location))

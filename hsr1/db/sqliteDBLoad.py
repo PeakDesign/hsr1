@@ -242,7 +242,65 @@ class SqliteDBLoad():
             raise ValueError("No data matches your query, check your start_time, end_time and any conditions")
         
         return result
-    
+
+    def load_tuple(self):
+        """ loads all the data from the database, in the same format as is returned by read_txt.read()
+        
+        returns:
+            tuple of dataframes representing tables:
+            (spectral_data, system_data, deployment_metadata, accessory_data)
+            accessory_data is ommitted if not present
+        """
+
+        spectral_data = self.load(table="spectral_data")
+        spectral_data["pc_time_end_measurement"] = spectral_data["pc_time_end_measurement"].astype(str)
+        
+        system_data = self.load(table="system_data")
+        system_data["pc_time_end_measurement"] = system_data["pc_time_end_measurement"].astype(str)
+
+        deployment_metadata = self.load_metadata()
+        deployment_metadata.index = pd.Index(list(np.arange(1, len(deployment_metadata.index)+1, 1).astype(str)))
+        deployment_metadata["mobile"] = deployment_metadata["mobile"].astype(bool)
+
+        has_accessory = "accessory_data" in self.load_table_names().keys()
+
+        dfs = spectral_data, system_data, deployment_metadata
+        if has_accessory:
+            accessory_data = self.load_accessory()
+            accessory_data["pc_time_end_measurement"] = accessory_data["pc_time_end_measurement"].astype(str)
+
+
+            dfs = spectral_data, system_data, deployment_metadata, accessory_data
+        
+        return dfs
+                                                                                                   
+    def load_raw_tuple(self):
+        """loads all the raw data from the database, in the same format as is returned by read_txt.read_raw_txt()
+        
+        returns:
+            tuple containing: (raw_dataframes, deployment metadata)
+            raw dataframes is a tuple of dataframes where each column represents a single wavlelength. one dataframe per channel
+        """
+        table_names = self.load_table_names()
+
+        raw_channels = []
+        for channel in table_names["raw_data"]:
+            if channel == "pc_time_end_measurement":
+                continue
+            this_channel = self.load_raw([channel])
+            this_channel.index = pd.DatetimeIndex(this_channel.index)
+            raw_channels.append(this_channel)
+        
+        raw_channels = tuple(raw_channels)
+
+        
+        deployment_metadata = self.load_metadata()
+        deployment_metadata.index = pd.Index(list(np.arange(1, len(deployment_metadata.index)+1, 1).astype(str)))
+        deployment_metadata["mobile"] = deployment_metadata["mobile"].astype(bool)
+
+        return raw_channels, deployment_metadata
+
+
     
     def load_raw(self, columns:[str]=[], 
                  start_time=None, 

@@ -128,7 +128,7 @@ class SqliteDBStore():
 
         # handling two args for dfs and deployment metadata or a tuple of both
         if deployment_metadata is None:
-            if type(dfs[1]) == pd.DataFrame and type(dfs[0]) == list:
+            if type(dfs[1]) == pd.DataFrame and type(dfs[0]) in [list, tuple]:
                 deployment_metadata = dfs[1]
                 dfs = dfs[0]
 

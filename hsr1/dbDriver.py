@@ -102,6 +102,25 @@ class DBDriver:
                                  sort,
                                  deserialise,
                                  timezone)
+
+    def load_tuple(self):
+        """ loads all the data from the database, in the same format as is returned by read_txt.read()
+        
+        returns:
+            tuple of dataframes representing tables:
+            (spectral_data, system_data, deployment_metadata, accessory_data)
+            accessory_data is ommitted if not present
+        """
+        return self.db_load.load_tuple()
+
+    def load_raw_tuple(self):
+        """loads all the raw data from the database, in the same format as is returned by read_txt.read_raw_txt()
+        
+        returns:
+            tuple containing: (raw_dataframes, deployment metadata)
+            raw dataframes is a tuple of dataframes where each column represents a single wavlelength. one dataframe per channel
+        """
+        return self.db_load.load_raw_tuple()
     
     def load_accessory(self, columns:[str]=[], 
                        start_time:str=None, 
