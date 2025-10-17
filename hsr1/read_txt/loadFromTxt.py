@@ -62,6 +62,7 @@ def read(hsr_path="", start_date="2000-01-01", end_date="2100-01-01", deployment
     m_Summary = []
     m_Gps = []
     m_IndCh = []
+    m_Hdr = []
     
     
     for hsr_date in hsr_dates:
@@ -78,6 +79,9 @@ def read(hsr_path="", start_date="2000-01-01", end_date="2100-01-01", deployment
         dfTemp = ImportHSRFiles.open_hsr_file(hsr_path, hsr_date, 'IndCh.txt')
         if len(dfTemp):
             m_IndCh.append(dfTemp)
+        dfTemp = ImportHSRFiles.open_hsr_file(hsr_path, hsr_date, 'HDRScaling.txt')
+        if len(dfTemp):
+            m_Hdr.append(dfTemp)
         dfTemp = ImportHSRFiles.open_hsr_file(hsr_path, hsr_date, gps_file_name)
         if len(dfTemp):
             m_Gps.append(dfTemp)
@@ -95,13 +99,16 @@ def read(hsr_path="", start_date="2000-01-01", end_date="2100-01-01", deployment
     if len(m_IndCh): 
         ind_ch = pd.concat(m_IndCh)
     else: ind_ch = None
+    if len(m_Hdr): 
+        hdr = pd.concat(m_Hdr)
+    else: ind_ch = None
     if len(m_Gps):
         gps = pd.concat(m_Gps)
     else: gps = None
 
     reformatter = reformatData.ReformatData()
     
-    reformatted = reformatter.reformat_data([ed, eds, summary, ind_ch, gps], deployment_metadata_filepath, gps_type)
+    reformatted = reformatter.reformat_data([ed, eds, summary, ind_ch, hdr, gps], deployment_metadata_filepath, gps_type)
     
     return reformatted
     

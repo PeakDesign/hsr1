@@ -224,7 +224,7 @@ class DailyPlots:
         # row_dfs = [pd.merge(all_seconds_dfs[i], row_dfs[i], on="pc_time_end_measurement", how="outer") for i in range(len(all_seconds_dfs))]
 
         
-        full_title = self.title_prefix+title
+        full_title = self.title_prefix+title+"\n"
         fig, axes = plt.subplots(len(row_dates), figsize=(16.5, 11.7))
         if isinstance(axes, matplotlib.axes._axes.Axes):
             axes = [axes]

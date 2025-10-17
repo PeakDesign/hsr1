@@ -109,7 +109,7 @@ class SqliteDBLoad():
         
         
         ##### make a list of all the column headers except accessory and a list of all the accessory column headers
-        if table == "accessory_data":
+        if table == "accessory_data" or table == "ind_ch" or table == "hdr":
             table_type = "accessory"
         else:
             column_headers, table_type = self.__guess_type(column_headers, columns)
@@ -179,11 +179,15 @@ class SqliteDBLoad():
             if len(table_and_column_names)>0 or columns == []:
                 
                 tables = list(column_headers.keys())
+
+                to_match_column = "sample_id"
+                if table_type == "accessory":
+                    to_match_column = "pc_time_end_measurement"
                 
                 main_table = tables[0]
                 table_string = main_table
                 for table_name in tables[1:]:
-                    table_string += " LEFT JOIN " + table_name + " ON " + main_table+".sample_id = " + table_name + ".sample_id"
+                    table_string += " LEFT JOIN " + table_name + " ON " + main_table+"."+to_match_column+" = " + table_name + "."+to_match_column
                 sql = ""
                 
                 order_by = ""
@@ -191,7 +195,7 @@ class SqliteDBLoad():
                     order_by = " ORDER BY STRFTIME('%s', "+time_col+")"
                 
                 if table_type == "accessory":
-                    sql = "SELECT "+", ".join(table_and_column_names)+" FROM accessory_data"+condition
+                    sql = "SELECT "+", ".join(table_and_column_names)+" FROM "+ table_string + condition
                     if sort:
                         sql += order_by
                 elif table_type == "deployment":
@@ -457,6 +461,48 @@ class SqliteDBLoad():
             print("could not load spectrum, no rows were returned from the dataframe")
         
         return pd.DataFrame()
+
+
+    def load_ind_ch(self, columns:[str]=[], 
+                    start_time:str=None, 
+                    end_time:str=None,
+                    condition:str="",
+                    raise_on_missing:bool=True,
+                    sort:bool=True,
+                    timezone:str="+00:00"
+                    ) -> pd.DataFrame:
+        """runs load with table="ind_ch". more readable than using the parameter."""
+        table_names = self.load_table_names()
+        
+        if "ind_ch" not in table_names.keys():
+            raise ValueError("this database dosent have individual channel data")
+        
+        if columns == []:
+            columns = table_names["ind_ch"]
+        
+        return self.load(columns, "ind_ch", start_time, end_time, condition,
+                         raise_on_missing, sort, True, timezone)
+    
+
+    def load_hdr(self, columns:[str]=[], 
+                 start_time:str=None, 
+                 end_time:str=None,
+                 condition:str="",
+                 raise_on_missing:bool=True,
+                 sort:bool=True,
+                 timezone:str="+00:00"
+                 ) -> pd.DataFrame:
+        """runs load with table="hdr". more readable than using the parameter."""
+        table_names = self.load_table_names()
+        
+        if "hdr" not in table_names.keys():
+            raise ValueError("this database dosent have hdr data")
+        
+        if columns == []:
+            columns = table_names["hdr"]
+        
+        return self.load(columns, "hdr", start_time, end_time, condition,
+                         raise_on_missing, sort, True, timezone)
     
         
     def load_sql(self, sql:str) -> pd.DataFrame:
@@ -490,7 +536,7 @@ class SqliteDBLoad():
         the types are:
             "normal": spectral_data, system_data, precalculated_values.
                 readings every minute, on the minute.
-            "accessory": accessory_data.
+            "accessory": accessory_data, hdr, ind_ch
                 readings every 10 seconds
             "deployment": deployment_metadata.
                 one reading every dataseries
@@ -501,15 +547,23 @@ class SqliteDBLoad():
             
             accessory_column_headers = deployment_column_headers = []
             if "accessory_data" in column_headers.keys():
-                accessory_column_headers = column_headers["accessory_data"]
+                accessory_column_headers += column_headers["accessory_data"]
                 del normal_column_headers["accessory_data"]
             
+            if "ind_ch" in column_headers.keys():
+                accessory_column_headers += column_headers["ind_ch"]
+                del normal_column_headers["ind_ch"]
+
+            if "hdr" in column_headers.keys():
+                accessory_column_headers += column_headers["hdr"]
+                del normal_column_headers["hdr"]
+
             if "deployment_metadata" in column_headers.keys():
                 deployment_column_headers = column_headers["deployment_metadata"]
                 del normal_column_headers["deployment_metadata"]
-            
-            
-            
+
+
+
             normal_column_headers_list = []
             for key in normal_column_headers:
                 normal_column_headers_list += normal_column_headers[key]
@@ -595,10 +649,21 @@ class SqliteDBLoad():
             
             
             if _type == "accessory":
-                column_headers = {"accessory_data": column_headers["accessory_data"]}
+                new_column_headers = {"accessory_data": column_headers["accessory_data"]}
+                
+                if "hdr" in column_headers.keys():
+                    new_column_headers["hdr"] = column_headers["hdr"]
+                if "ind_ch" in column_headers.keys():
+                    new_column_headers["ind_ch"] = column_headers["ind_ch"]
+
+                column_headers = new_column_headers
             else:
                 if "accessory_data" in column_headers.keys():
                     del column_headers["accessory_data"]
+                if "hdr" in column_headers.keys():
+                    del column_headers["hdr"]
+                if "ind_ch" in column_headers.keys():
+                    del column_headers["ind_ch"]
             
             if _type == "deployment":
                 column_headers = {"deployment_metadata": column_headers["deployment_metadata"]}

@@ -107,7 +107,7 @@ def open_hsr_file(hsr_path, hsr_date, hsr_file, Raw=False):
             else:
                 hsr_df = pd.read_csv(archive.open( hsr_file), skiprows=2, delimiter='\t',parse_dates=time_cols,  index_col=0)
             hsr_df.index = pd.to_datetime(hsr_df.index)
-        except KeyError:
+        except KeyError as e: 
             return hsr_df
         except:     # try a line-by-line read
             # print ("Error reading zip, trying line-by-line " + filename)

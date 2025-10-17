@@ -33,12 +33,19 @@ class SqliteDBStore():
         
         driver = self.driver
         
-        ##### unpacking dfs from list
-        spectral_data, system_data, deployment_metadata, *accessory_data_list = dfs
+        ##### unpacking dfs from list. ind_ch and hdr are optional as previous versions did not support it
+        if len(dfs) > 4:
+            spectral_data, system_data, deployment_metadata, ind_ch, hdr, *accessory_data_list = dfs
+        else:
+            spectral_data, system_data, deployment_metadata, *accessory_data_list = dfs
+            ind_ch = None
+            hdr = None
+        
+
         accessory_data = accessory_data_list[0] if len(accessory_data_list) >= 1 else pd.DataFrame()
         
         ##### changes the datatypes of all the uuids to strings, as sqlite dosent support uuids
-        spectral_data, system_data, deployment_metadata = self.__sqlite_change_types([spectral_data, system_data, deployment_metadata])
+        spectral_data, system_data, deployment_metadata, ind_ch = self.__sqlite_change_types([spectral_data, system_data, deployment_metadata, ind_ch])
         deployment_metadata = deployment_metadata.reset_index(drop=True)
         
         if driver.exists():
@@ -49,8 +56,8 @@ class SqliteDBStore():
             deployment_metadata["deployment_id"] = str(uuid.uuid1())
             deployment_metadata["dataseries_id"] = str(uuid.uuid1())
         
-        spectral_data, system_data, accessory_data = self.__add_dataseries_ids(deployment_metadata["dataseries_id"].iloc[0], 
-                                                                               spectral_data, system_data, accessory_data)
+        spectral_data, system_data, ind_ch, hdr, accessory_data = self.__add_dataseries_ids(deployment_metadata["dataseries_id"].iloc[0], 
+                                                                               spectral_data, system_data, ind_ch, hdr, accessory_data)
         
         
         ##### only add new data values
@@ -72,6 +79,8 @@ class SqliteDBStore():
                 
                 spectral_data = self.__check_for_duplicates(spectral_data, "spectral_data", deployment_ids, db_load)
                 system_data = self.__check_for_duplicates(system_data, "system_data", deployment_ids, db_load)
+                ind_ch = self.__check_for_duplicates(ind_ch, "ind_ch", deployment_ids, db_load)
+                hdr = self.__check_for_duplicates(hdr, "hdr", deployment_ids, db_load)
                 
                 
                 ##### check accessory_data for duplicates
@@ -89,6 +98,12 @@ class SqliteDBStore():
         
         normal_dfs = [spectral_data, system_data]
         normal_dfs_names = ["spectral_data", "system_data"]
+        if not ind_ch is None:
+            normal_dfs += [ind_ch]
+            normal_dfs_names += ["ind_ch"]
+        if not hdr is None:
+            normal_dfs += [hdr]
+            normal_dfs_names += ["hdr"]
         if len(accessory_data_list) >= 1:
             normal_dfs += [accessory_data]
             normal_dfs_names += ["accessory_data"]
@@ -446,16 +461,20 @@ class SqliteDBStore():
         
         return df
     
-    def __add_dataseries_ids(self, dataseries_id, spectral_data, system_data, accessory_data=None):
+    def __add_dataseries_ids(self, dataseries_id, spectral_data, system_data, ind_ch, hdr, accessory_data=None):
         """adds a given dataseries id to given dataframes"""
         if spectral_data is not None:
             spectral_data["dataseries_id"] = dataseries_id
         if system_data is not None:
             system_data["dataseries_id"] = dataseries_id
+        if ind_ch is not None:
+            ind_ch["dataseries_id"] = dataseries_id
+        if hdr is not None:
+            hdr["dataseries_id"] = dataseries_id
         if accessory_data is not None and len(accessory_data) > 0:
             accessory_data["dataseries_id"] = dataseries_id
             
-        return spectral_data, system_data, accessory_data
+        return spectral_data, system_data, ind_ch, hdr, accessory_data
     
     def __sqlite_change_types(self, dataframes:[pd.DataFrame]) -> [pd.DataFrame()]:
         """change the type of all the uuids to strings
@@ -493,6 +512,8 @@ class SqliteDBStore():
             existing_values = db_load.load(["pc_time_end_measurement", "dataseries_id"], table=table_name)
         except ValueError:
             ##### if there is no data in the database for this table, no need to check for dupes, just return original data
+            return data
+        except KeyError:
             return data
         
         if data is None:

@@ -17,23 +17,25 @@ class ReformatData():
     def reformat_data(self, dataframes:[pd.DataFrame], deployment_metadata_file_path:str, gps_type=None):
         """combines various methods to reformat all the data necessary for storing to the database
         params:
-            dataframes: list of 6 dataframes: [ed, eds, summary, hdr, ind_ch, gps]
+            dataframes: list of 6 dataframes: [ed, eds, summary, ind_ch, hdr, gps]
             deployment_metadata_file_path: path to the deployment metadata .ini file
             gps_type: the type of gps file, either "gps", or accessory"
         returns:
-            spectral_data, precalculated_values, system_data, deployment_metadata
+            spectral_data, precalculated_values, system_data, deployment_metadata, ind_ch, hdr, accessory_data (if applicable)
         """
         print("reformatting data")
         deployment_metadata = self.reformat_deployment_metadata(deployment_metadata_file_path)
         spectral_data = self.reformat_spectral_data(dataframes[:3])
+        ind_ch = self.reformat_ind_ch_hdr(dataframes[3])
+        hdr = self.reformat_ind_ch_hdr(dataframes[4])
         system_data = None
         accessory_data = None
         
-        if dataframes[4] is None:       # for datasets with no GPS, create a dummy from default values
+        if dataframes[5] is None:       # for datasets with no GPS, create a dummy from default values
             print("No GPS data found")
             system_data=None
         else:
-            gps_data = dataframes[4]
+            gps_data = dataframes[5]
             if gps_type is None:        # check gps_type is set correctly
                 columns = gps_data.columns
                 if len(columns) > 12:
@@ -59,8 +61,13 @@ class ReformatData():
             nan_readings = system_data["sample_id"].isna()
             uuids = [uuid.uuid1() for i in range(sum(nan_readings))]
             system_data.loc[nan_readings, "sample_id"] = uuids
+
+        # ind_ch = self.match_sample_ids(spectral_data, ind_ch, "sample_id")
         
         spectral_data = self.reset_index(spectral_data, "pc_time_end_measurement")
+        hdr = self.reset_index(hdr, "pc_time_end_measurement")
+        ind_ch = self.reset_index(ind_ch, "pc_time_end_measurement")
+        
         
         tz_string = deployment_metadata.iloc[0]["timezone"]
         timezone, timedelta = self.calculate_timezone(tz_string)
@@ -80,14 +87,14 @@ class ReformatData():
             system_data.loc[invalid_gps, "gps_latitude"] = default_location[1]
             system_data.loc[invalid_gps, "gps_altitude"] = default_location[2]
         
-        dfs = [spectral_data, system_data, accessory_data] if gps_type == "accessory" else [spectral_data, system_data]
+        dfs = [spectral_data, system_data, ind_ch, hdr, accessory_data] if gps_type == "accessory" else [spectral_data, system_data, ind_ch, hdr]
         
         for df in dfs:
             if df is not None:
                 # df["pc_time_end_measurement"] = (pd.to_datetime(df["pc_time_end_measurement"])+timedelta).astype(str)
                 df["pc_time_end_measurement"] = df["pc_time_end_measurement"].astype(str)+timezone
         
-        dfs = [spectral_data, system_data, deployment_metadata, accessory_data] if gps_type == "accessory" else [spectral_data, system_data, deployment_metadata]
+        dfs = [spectral_data, system_data, deployment_metadata, ind_ch, hdr, accessory_data] if gps_type == "accessory" else [spectral_data, system_data, deployment_metadata, ind_ch, hdr]
         return tuple(dfs)
     
 
@@ -479,6 +486,15 @@ class ReformatData():
         accessory = self.reset_index(accessory, "pc_time_end_measurement")
         
         return accessory
+
+
+    def reformat_ind_ch_hdr(self, data):
+        columns = data.columns
+        new_columns = []
+        for i in range(len(columns)):
+            new_columns.append(columns[i].lower().replace(" ", "_"))
+        data.columns = new_columns
+        return data
     
     
     def calculate_timezone(self, timezone):

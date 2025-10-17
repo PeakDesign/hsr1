@@ -187,6 +187,27 @@ class Graph:
         print("plotting daily temps")
         columns = ["T_CPU", "T_Bezel", "T_RH", "T_Baro"]
         self.plot_daily_line(columns, period, rows, days_in_row, flag, True, title_prefix="temperatures in ", dataframe=dataframe)
+
+    def daily_ind_ch(self, period="monthly", rows=None, days_in_row=None, dataframe=None): 
+        print("ploting daily individual channel readings")
+      
+        dataframe = self.driver.load_ind_ch()
+        non_plot_columns = ["pc_time_end_measurement", "dataseries_id", "ch0"]
+        columns = [col for col in dataframe.columns if not col in non_plot_columns ]
+
+        self.plot_daily_line(columns, period, rows, days_in_row, flag=False, ignore_zero=True, title_prefix="individual channels in ", dataframe=dataframe)
+
+    def daily_hdr(self, period="monthly", rows=None, days_in_row=None, dataframe=None): 
+        print("ploting daily hdr readings")
+      
+        dataframe = self.driver.load_hdr()
+        non_plot_columns = ["pc_time_end_measurement", "dataseries_id"]
+        columns = [col for col in dataframe.columns if not col in non_plot_columns ]
+
+        self.plot_daily_line(columns, period, rows, days_in_row, flag=False, ignore_zero=True, title_prefix="hdr values in ", dataframe=dataframe)
+
+
+        
     
     def daily_aod_cimel(self, aod_type:str="aod_microtops", wavelengths:list=None, 
                         period="monthly", rows=None, days_in_row=None, 
@@ -899,6 +920,12 @@ class Graph:
                         "Longitude"]
         
         data = self.load_data(requirements, accessory_dataframe)
+
+        if len(data.columns) == 1:
+            print("insufficient data to plot Accessory")
+            return
+
+
         data = data.loc[data["StatusFlags"] != 0.0]
         
         spectral_requirements = ["pc_time_end_measurement", "camera_temp"]
@@ -1094,7 +1121,10 @@ class Graph:
                 gps_type = "GPS"
             except (ValueError, KeyError):
                 raise ValueError("insufficient columns to plot gps")
-        
+
+        if len(data.columns) == 1:
+            print("insufficient data to plot GPS")
+            return
         
         layout = [["gps_density", "time_diff"],
                   ["gps_density", "gps_age"],
@@ -1106,6 +1136,7 @@ class Graph:
         
         
         data = data.copy()
+        print(data)
         
         ##### ignore all the data where StatusFlags is 0
         #####   this filters out all the rows where all the data is 0
@@ -1306,7 +1337,29 @@ class Graph:
         if self.driver is None:
             raise ValueError("database is None and not all the required columns were passed to dataframe")
         
-        return self.driver.load(columns, **self.kwargs)
+        
+        data = self.driver.load(columns, raise_on_missing=False, **self.kwargs)
+
+        # fill gps columns with default values if gps column is missing from database
+        columns_match = True
+        for col in columns:
+            if col not in data.columns:
+                columns_match = False
+
+        if columns_match:
+            return data
+
+        # names of the columns that have default values and their corresponding column names in the 
+        #   deployment metadata database
+        gps_cols = ["gps_longitude", "gps_latitude", "gps_altitude"]
+        deployment_metadata_cols = ["default_longitude", "default_latitude", "default_elevation"]
+        for gps_col, deployment_metadata_col in zip(gps_cols, deployment_metadata_cols):
+            if gps_col in columns and not gps_col in data.columns:
+                default_col_data = self.driver.load_metadata([deployment_metadata_col])[deployment_metadata_col].iloc[0]
+                
+                data[gps_col] = default_col_data
+
+        return data
                 
             
         

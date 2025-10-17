@@ -137,6 +137,38 @@ class DBDriver:
                                            raise_on_missing,
                                            sort,
                                            timezone)
+
+    def load_ind_ch(self, columns:[str]=[], 
+                    start_time:str=None, 
+                    end_time:str=None,
+                    condition:str="",
+                    raise_on_missing:bool=True,
+                    sort:bool=True,
+                    timezone:str="+00:00"
+                    ) -> pd.DataFrame:
+        return self.db_load.load_ind_ch(columns,
+                                        start_time,
+                                        end_time,
+                                        condition,
+                                        raise_on_missing,
+                                        sort,
+                                        timezone)
+
+    def load_hdr(self, columns:[str]=[], 
+                 start_time:str=None, 
+                 end_time:str=None,
+                 condition:str="",
+                 raise_on_missing:bool=True,
+                 sort:bool=True,
+                 timezone:str="+00:00"
+                 ) -> pd.DataFrame:
+        return self.db_load.load_hdr(columns,
+                                     start_time,
+                                     end_time,
+                                     condition,
+                                     raise_on_missing,
+                                     sort,
+                                     timezone)
     
     def load_metadata(self, columns:[str]=[], condition:str="",
                       raise_on_missing=True) -> pd.DataFrame:
@@ -224,19 +256,18 @@ class DBDriver:
         except KeyError:
             data = pd.DataFrame()
             data["pc_time_end_measurement"] = spectral_data["pc_time_end_measurement"]
+            data["dataseries_id"] = spectral_data["dataseries_id"]
         
         if "gps_longitude" not in data.columns:
             data["gps_longitude"] = deployment_metadata["default_longitude"].iloc[0]
             data["gps_latitude"] = deployment_metadata["default_latitude"].iloc[0]
             data["gps_altitude"] = deployment_metadata["default_elevation"].iloc[0]
         
-        
-        if sample_ids_to_add is not None:
+        if (sample_ids_to_add is not None) and "sample_id" in data.columns:
             select_data = data.set_index("sample_id")
             data_to_calculate = select_data.loc[sample_ids_to_add, :]
             data_to_calculate["sample_id"] = data_to_calculate.index
             data = data_to_calculate.reset_index(drop=True)
-        
         
         
         precalculated_values = p_calcs.calculate_all(data, method)
