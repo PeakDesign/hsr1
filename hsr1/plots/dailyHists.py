@@ -118,8 +118,19 @@ class DailyHists:
             
             if limited_bins:
                 data_range = np.max(non_zero_df) - np.min(non_zero_df)
+
+                ##### if ylims has been set, calculate the limited bins from the data within the ylims
+                non_zero_in_range_df = None
+                if ylims is not None:
+                    non_zero_in_range_df = non_zero_df[np.logical_and(np.greater_equal(non_zero_df.values, ylims[0]), np.less_equal(non_zero_df.values, ylims[1]))]
+                    print(np.max(non_zero_in_range_df))
+                    data_range = np.max(non_zero_in_range_df) - np.min(non_zero_in_range_df)
+                    
+
                 if zero_axes:
                     data_range = np.max(non_zero_df)+1
+                    if ylims is not None:
+                        data_range = np.max(non_zero_in_range_df)+1
                 min_diff = np.min(np.diff(np.sort(np.unique(non_zero_df))))
                 
                 ybin = int(data_range/min_diff)

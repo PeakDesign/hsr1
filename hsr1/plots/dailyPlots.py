@@ -218,8 +218,6 @@ class DailyPlots:
         df = df.sort_values(by="pc_time_end_measurement")
         
 
-        print(df["pc_time_end_measurement"])
-
         row_dfs = [df.loc[np.isin(df["pc_time_end_measurement"].dt.date, row)] for row in row_dates]
         # row_dfs = [pd.merge(all_seconds_dfs[i], row_dfs[i], on="pc_time_end_measurement", how="outer") for i in range(len(all_seconds_dfs))]
 

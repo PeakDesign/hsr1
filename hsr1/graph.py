@@ -927,6 +927,7 @@ class Graph:
 
 
         data = data.loc[data["StatusFlags"] != 0.0]
+        print(data)
         
         spectral_requirements = ["pc_time_end_measurement", "camera_temp"]
         
@@ -1136,7 +1137,6 @@ class Graph:
         
         
         data = data.copy()
-        print(data)
         
         ##### ignore all the data where StatusFlags is 0
         #####   this filters out all the rows where all the data is 0
@@ -1195,7 +1195,7 @@ class Graph:
             except Exception as e:
                 print("failed plotting GPSAge\n"+str(e))
             try:
-                dh.plot_one_hist("NSV", axes["NSV"], limited_bins=True, zero_axes=True)
+                dh.plot_one_hist("NSV", axes["NSV"], limited_bins=True, zero_axes=True, ylims=(0, 50))
             except KeyboardInterrupt as e:
                 raise e
             except Exception as e:

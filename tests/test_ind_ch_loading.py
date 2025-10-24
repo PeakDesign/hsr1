@@ -95,8 +95,3 @@ class TestIndChLoading:
         loaded_data = driver.load_hdr()
         assert("offset_1" in loaded_data.columns)
 
-        assert(False)
-
-
-
-

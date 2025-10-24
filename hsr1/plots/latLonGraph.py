@@ -66,6 +66,9 @@ class LatLonGraph:
         lat_unique = len(self.data[lat_name].unique())
         lon_unique = len(self.data[lon_name].unique())
         
+        self.data[lon_name] = self.data[lon_name].astype(float)
+        self.data[lat_name] = self.data[lat_name].astype(float)
+
         if lon_unique < bins:
             evenly_spaced_lon = int(max(((self.data[lon_name])-min(self.data[lon_name]))/0.01)+1)
             new_bins[0] = min(100, max(lon_unique, evenly_spaced_lon))

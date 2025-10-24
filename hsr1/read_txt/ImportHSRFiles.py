@@ -104,6 +104,8 @@ def open_hsr_file(hsr_path, hsr_date, hsr_file, Raw=False):
             if Raw==True:
                 hsr_df = pd.read_csv(archive.open( hsr_file), skiprows=1, delimiter='\t', index_col=0, header=None)                
                 hsr_df.columns = np.arange(300, 1101)
+                hsr_df = hsr_df[hsr_df.index.notnull()]
+                hsr_df = hsr_df.astype(float)
             else:
                 hsr_df = pd.read_csv(archive.open( hsr_file), skiprows=2, delimiter='\t',parse_dates=time_cols,  index_col=0)
             hsr_df.index = pd.to_datetime(hsr_df.index)
@@ -120,6 +122,8 @@ def open_hsr_file(hsr_path, hsr_date, hsr_file, Raw=False):
             if Raw==True:
                 hsr_df = pd.read_csv(filename, skiprows=1, delimiter='\t', index_col=0, header=None)                
                 hsr_df.columns = np.arange(300, 1101)
+                hsr_df = hsr_df[hsr_df.index.notnull()]
+                hsr_df = hsr_df.astype(float)
             else:        
                 hsr_df = pd.read_csv(filename, skiprows=2, delimiter='\t', parse_dates=time_cols, index_col=0)
             hsr_df.index = pd.to_datetime(hsr_df.index)

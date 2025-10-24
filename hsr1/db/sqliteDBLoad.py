@@ -86,7 +86,7 @@ class SqliteDBLoad():
         if the start and end times dont include the dataset, it will return an empty dataframe,
         if the start or end times are invalid, it will ignore it and include the whole dataset, subject to other conditions
         """
-        if not os.path.isfile(self.db_name):
+        if not os.path.exists(self.db_name):
             raise Exception(f"database '{self.db_name}' does not exist")
         column_headers = self.load_table_names()
         all_column_headers = self.load_table_names()
@@ -120,17 +120,12 @@ class SqliteDBLoad():
         output_columns = []
         for column in columns:
             found = False
-            if table_type == "accessory":
-                table_and_column_names.append(column)
-                output_columns.append(column)
-                found = True
-            else:
-                for key in column_headers:
-                    if column in column_headers[key] and key != "raw":
-                        found = True
-                        table_and_column_names.append(key+"."+column)
-                        output_columns.append(column)
-                        break
+            for key in column_headers:
+                if column in column_headers[key] and key != "raw":
+                    found = True
+                    table_and_column_names.append(key+"."+column)
+                    output_columns.append(column)
+                    break
             if not found and raise_on_missing:
                 raise KeyError("column: '" +column+ "' was not found, maybe use 'load_metadata()' or 'load_accessory_data()")
         
@@ -252,7 +247,7 @@ class SqliteDBLoad():
         
         returns:
             tuple of dataframes representing tables:
-            (spectral_data, system_data, deployment_metadata, accessory_data)
+            (spectral_data, system_data, deployment_metadata, ind_ch, hdr, accessory_data)
             accessory_data is ommitted if not present
         """
 
@@ -262,19 +257,25 @@ class SqliteDBLoad():
         system_data = self.load(table="system_data")
         system_data["pc_time_end_measurement"] = system_data["pc_time_end_measurement"].astype(str)
 
+        ind_ch = self.load(table="ind_ch")
+        ind_ch["pc_time_end_measurement"] = ind_ch["pc_time_end_measurement"].astype(str)
+        
+        hdr = self.load(table="hdr")
+        hdr["pc_time_end_measurement"] = hdr["pc_time_end_measurement"].astype(str)
+
         deployment_metadata = self.load_metadata()
         deployment_metadata.index = pd.Index(list(np.arange(1, len(deployment_metadata.index)+1, 1).astype(str)))
         deployment_metadata["mobile"] = deployment_metadata["mobile"].astype(bool)
 
         has_accessory = "accessory_data" in self.load_table_names().keys()
 
-        dfs = spectral_data, system_data, deployment_metadata
+        dfs = spectral_data, system_data, deployment_metadata, ind_ch, hdr
         if has_accessory:
             accessory_data = self.load_accessory()
             accessory_data["pc_time_end_measurement"] = accessory_data["pc_time_end_measurement"].astype(str)
 
 
-            dfs = spectral_data, system_data, deployment_metadata, accessory_data
+            dfs = spectral_data, system_data, deployment_metadata, ind_ch, hdr, accessory_data
         
         return dfs
                                                                                                    
