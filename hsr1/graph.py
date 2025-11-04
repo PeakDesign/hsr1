@@ -176,35 +176,53 @@ class Graph:
         #     plt.savefig(self.output_location+"/" + ", ".join(columns) + " line.png")
         plt.show(block=self.block)
     
-    def daily_integrals(self, period="monthly", rows=None, days_in_row=None, flag=True, dataframe=None):
+    def daily_integrals(self, period="monthly", rows=None, days_in_row=None, 
+                        flag=True, ignore_zero=False, title_prefix="sunlight intensity in ", 
+                        dataframe=None, max_limit=None, min_limit=None):
         """daily plot preset of dni, ghi, and diffuse, also uses sza and toa_hi to flag data"""
         print("plotting daily integrals")
         columns = ["direct_normal_integral", "global_integral", "diffuse_integral"]
-        self.plot_daily_line(columns, period, rows, days_in_row, flag, title_prefix="sunlight intensity in ", dataframe=dataframe)
+
+        self.plot_daily_line(columns, period, rows, days_in_row, flag, ignore_zero=ignore_zero, 
+                             title_prefix=title_prefix, 
+                             dataframe=dataframe, max_limit=max_limit, min_limit=min_limit)
     
-    def daily_temps(self, period="monthly", rows=None, days_in_row=None, flag=True, dataframe=None):
+    def daily_temps(self, period="monthly", rows=None, days_in_row=None, 
+                    flag=True, ignore_zero=False, title_prefix="temperature values in ", 
+                    dataframe=None, max_limit=None, min_limit=None):
         """daily plot preset of all different temperature measurements"""
         print("plotting daily temps")
         columns = ["T_CPU", "T_Bezel", "T_RH", "T_Baro"]
-        self.plot_daily_line(columns, period, rows, days_in_row, flag, True, title_prefix="temperatures in ", dataframe=dataframe)
 
-    def daily_ind_ch(self, period="monthly", rows=None, days_in_row=None, dataframe=None): 
+        self.plot_daily_line(columns, period, rows, days_in_row, flag, ignore_zero=ignore_zero, 
+                             title_prefix=title_prefix, 
+                             dataframe=dataframe, max_limit=max_limit, min_limit=min_limit)
+
+    def daily_ind_ch(self, period="monthly", rows=None, days_in_row=None, 
+                     flag=True, ignore_zero=False, title_prefix="individual channel values in ",  
+                     dataframe=None, max_limit=None, min_limit=None): 
         print("ploting daily individual channel readings")
       
         dataframe = self.driver.load_ind_ch()
         non_plot_columns = ["pc_time_end_measurement", "dataseries_id", "ch0"]
         columns = [col for col in dataframe.columns if not col in non_plot_columns ]
 
-        self.plot_daily_line(columns, period, rows, days_in_row, flag=False, ignore_zero=True, title_prefix="individual channels in ", dataframe=dataframe)
+        self.plot_daily_line(columns, period, rows, days_in_row, flag, ignore_zero=ignore_zero, 
+                             title_prefix=title_prefix, 
+                             dataframe=dataframe, max_limit=max_limit, min_limit=min_limit)
 
-    def daily_hdr(self, period="monthly", rows=None, days_in_row=None, dataframe=None): 
+    def daily_hdr(self, period="monthly", rows=None, days_in_row=None, 
+                  flag=True, ignore_zero=False, title_prefix="hdr values in ", 
+                  dataframe=None, max_limit=None, min_limit=None): 
         print("ploting daily hdr readings")
       
         dataframe = self.driver.load_hdr()
         non_plot_columns = ["pc_time_end_measurement", "dataseries_id"]
         columns = [col for col in dataframe.columns if not col in non_plot_columns ]
 
-        self.plot_daily_line(columns, period, rows, days_in_row, flag=False, ignore_zero=True, title_prefix="hdr values in ", dataframe=dataframe)
+        self.plot_daily_line(columns, period, rows, days_in_row, flag, ignore_zero=ignore_zero, 
+                             title_prefix=title_prefix, 
+                             dataframe=dataframe, max_limit=max_limit, min_limit=min_limit)
 
 
         
@@ -927,7 +945,6 @@ class Graph:
 
 
         data = data.loc[data["StatusFlags"] != 0.0]
-        print(data)
         
         spectral_requirements = ["pc_time_end_measurement", "camera_temp"]
         

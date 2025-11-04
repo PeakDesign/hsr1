@@ -159,28 +159,28 @@ class TestDatabase:
     #     assert(len(data.index) == 1)
     #
     #
-    # def test_deployment_metadata_is_shared_if_same(self):
-    #     data_filepath = "tests/res/Tara 2023"
-    #     deployment_metadata_filepath = "tests/res/NOAA 2025/HSR1-009 NOAA 2025 Deployment.ini"
-    #
-    #     database_location = "tests/temp/databases/my_database.db"
-    #
-    #     db_driver = hsr1.DBDriver(database_location)
-    #
-    #     if os.path.exists(database_location):
-    #         os.remove(database_location)
-    #
-    #     txt_data = hsr1.read_txt.read(data_filepath, 
-    #                                       deployment_metadata_filepath=deployment_metadata_filepath,
-    #                                       end_date="2023-06-04")
-    #     db_driver.store(txt_data)
-    #
-    #     txt_data = hsr1.read_txt.read(data_filepath, 
-    #                                       deployment_metadata_filepath=deployment_metadata_filepath,
-    #                                     start_date="2023-06-06",
-    #                                       end_date="2023-06-06")
-    #     db_driver.store(txt_data)
-    #
-    #
-    #     data = db_driver.load_metadata()
-    #     assert(len(data.index) == 1)
+    def test_deployment_metadata_is_shared_if_same(self):
+        data_filepath = "tests/res/Tara 2023"
+        deployment_metadata_filepath = "tests/res/NOAA 2025/HSR1-009 NOAA 2025 Deployment.ini"
+
+        database_location = "tests/temp/databases/my_database.db"
+
+        db_driver = hsr1.DBDriver(database_location)
+
+        if os.path.exists(database_location):
+            os.remove(database_location)
+
+        txt_data = hsr1.read_txt.read(data_filepath, 
+                                          deployment_metadata_filepath=deployment_metadata_filepath,
+                                          end_date="2023-06-04")
+        db_driver.store(txt_data)
+
+        txt_data = hsr1.read_txt.read(data_filepath, 
+                                          deployment_metadata_filepath=deployment_metadata_filepath,
+                                        start_date="2023-06-05",
+                                          end_date="2023-06-05")
+        db_driver.store(txt_data)
+
+
+        data = db_driver.load_metadata()
+        assert(len(data.index) == 1)

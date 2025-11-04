@@ -22,7 +22,9 @@ class TestIndChGraph:
         
         graph = hsr1.Graph(driver)
 
+        graph.daily_integrals(rows=2, days_in_row=3, period=6)
         graph.daily_ind_ch()
+        graph.daily_ind_ch(rows=2, days_in_row=3, period=6)
 
     # def test_should_plot_hdr_graph(self):
     #

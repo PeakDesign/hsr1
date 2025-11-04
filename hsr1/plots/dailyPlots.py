@@ -139,7 +139,6 @@ class DailyPlots:
         num_pages = len(all_days)//num_days_in_page if len(all_days) % num_days_in_page == 0 else len(all_days)//num_days_in_page + 1
         
         
-        
         page_days = [all_days[i*num_days_in_page:(i+1)*num_days_in_page] for i in range(num_pages)]
         
         for days in page_days:
@@ -268,21 +267,62 @@ class DailyPlots:
             self.plot_int(data, period, rows, days_in_row)
         
         elif period == "monthly":
+            # set default values for rows and days_in_row
+            if rows is None and days_in_row is None:
+                rows = 5
+                days_in_row = 7
             
-            # years_and_months = np.unique(list(zip(data["pc_time_end_measurement"].dt.month.to_numpy(), 
-            #                                       data["pc_time_end_measurement"].dt.year.to_numpy())), 
-            #                              axis=0)
+            elif rows is None:
+                if 31 % days_in_row == 0:
+                    rows = 31/days_in_row
+                else:
+                    rows = (31//days_in_row) +1
+
+            elif days_in_row is None:
+                if 31 % rows == 0:
+                    days_in_row = 31/rows
+                else:
+                    days_in_row = (31//rows) +1
+            
             years_and_months = data["pc_time_end_measurement"].dt.year*100+data["pc_time_end_measurement"].dt.month
             
             pages_dfs = [data.loc[data["pc_time_end_measurement"].dt.year*100+data["pc_time_end_measurement"].dt.month == year_and_month] for year_and_month in years_and_months.unique()]
         
             for df in pages_dfs:
-                self.plot_month(df, rows, days_in_row)
+                # plot all the days on one plot if they can fit, otherwise split the month into seperate plots
+                first_day = df["pc_time_end_measurement"].dt.day.iloc[0]
+                last_day = df["pc_time_end_measurement"].dt.day.iloc[len(df)-1]
+                num_days_of_data = last_day-first_day
+
+                if num_days_of_data <= rows*days_in_row:
+                    self.plot_month(df, rows, days_in_row)
+                else:
+                    self.plot_int(df, rows*days_in_row, rows, days_in_row)
         
         elif period == "weekly":
-            if rows == None:
-                rows = 5
-            days_in_row = 7
-            period = 7 * rows
-            self.plot_int(data, period, rows, days_in_row)
+            if rows is None and days_in_row is None:
+                rows = 1
+                days_in_row = 7
+            
+            elif rows is None:
+                if 7 % days_in_row == 0:
+                    rows = int(7/days_in_row)
+                else:
+                    rows = int((7//days_in_row) +1)
+
+            elif days_in_row is None:
+                if 7 % rows == 0:
+                    days_in_row = int(7/rows)
+                else:
+                    days_in_row = int((7//rows) +1)
+
+            page_start_date = data["pc_time_end_measurement"].iloc[0].date()
+            final_date = data["pc_time_end_measurement"].iloc[len(data)-1].date()
+            while page_start_date < final_date:
+                page_end_date = page_start_date + pd.Timedelta(7, "days")
+                page_df = data[np.logical_and(data["pc_time_end_measurement"].dt.date >= page_start_date, data["pc_time_end_measurement"].dt.date < page_end_date)]
+
+                page_start_date += pd.Timedelta(7, "days")
+                self.plot_int(page_df, 7, rows, days_in_row)
+
         
