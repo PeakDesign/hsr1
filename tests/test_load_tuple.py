@@ -113,6 +113,7 @@ class TestLoadTuple:
 
     def test_non_accessory_data(self):
         data_filepath = "tests/res/SGP 2022"
+        # data_filepath = "/home/albie/PeakDesign/Albie datasets/SGP 2022/"
         deployment_metadata_filepath = "tests/res/SGP 2022/SGP 2022 Deployment.ini"
 
         database_location_a = "tests/temp/databases/my_database_a.db"

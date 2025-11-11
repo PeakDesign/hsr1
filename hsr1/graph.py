@@ -142,7 +142,7 @@ class Graph:
         ##### one liner to remove duplicates from a list while preserving the order
         data_columns = list(dict.fromkeys(data_columns).keys())+["pc_time_end_measurement"]
         
-        data = self.load_data(data_columns, dataframe)
+        data = self.load_data(data_columns, dataframe, missing_columns="ignore")
         
         if dni:
             # data["direct_normal_integral"] = ((data["global_integral"]-data["diffuse_integral"])/np.cos(data["sza"]))
@@ -216,7 +216,9 @@ class Graph:
                   dataframe=None, max_limit=None, min_limit=None): 
         print("ploting daily hdr readings")
       
-        dataframe = self.driver.load_hdr()
+        scale_columns = ["scale_"+str(i) for i in range(10)]
+        offset_columns = ["offset_"+str(i) for i in range(10)]
+        dataframe = self.load_data(scale_columns+offset_columns, dataframe, missing_columns="ignore")
         non_plot_columns = ["pc_time_end_measurement", "dataseries_id"]
         columns = [col for col in dataframe.columns if not col in non_plot_columns ]
 
@@ -1342,7 +1344,7 @@ class Graph:
         
         return spectrum
     
-    def load_data(self, columns, dataframe):
+    def load_data(self, columns, dataframe, missing_columns="raise"):
         """returns a dataframe with the requested columns. either from the passed dataframe
         or from the dbdriver if that is missing.
         """
@@ -1350,8 +1352,16 @@ class Graph:
         if dataframe is not None:
             if np.isin(columns, dataframe.columns).all():
                 return dataframe.copy()
+            else:
+                if missing_columns == "raise":
+                    raise ValueError("not all columns are in the passed dataframe")
+                output_df = pd.DataFrame()
+                for column in columns:
+                    if column in dataframe.columns:
+                        output_df[column] = dataframe[column]
+                return output_df
         
-        if self.driver is None:
+        if self.driver is None and missing_columns=="raise":
             raise ValueError("database is None and not all the required columns were passed to dataframe")
         
         

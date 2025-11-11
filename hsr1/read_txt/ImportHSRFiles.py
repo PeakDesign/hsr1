@@ -99,6 +99,7 @@ def open_hsr_file(hsr_path, hsr_date, hsr_file, Raw=False):
     hsr_df = []
     if os.path.isfile(filename):    # for data in zipfiles
         try:    # try the quick read, works for uninterrupted files
+            print(filename)
             archive = zipfile.ZipFile(filename, 'r')
             ### Import hsr file from daily folder
             if Raw==True:

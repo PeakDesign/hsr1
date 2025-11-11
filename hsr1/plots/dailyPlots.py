@@ -67,15 +67,17 @@ class DailyPlots:
         
         axes.set_ylim(self.min, self.max)
         if legend:
+            num_cols = min(5, len(self.columns))
+
             ##### accounting for different matplotlib versions
             mpl_version = matplotlib.__version__
             mpl_version = mpl_version.split(".")
             if int(mpl_version[0]) > 3 or (int(mpl_version[0]) == 3 and int(mpl_version[1]) > 5):
-                legend = axes.legend(loc='upper center', ncols=len(self.columns))
+                legend = axes.legend(loc='upper center', ncols=num_cols)
                 for leg in legend.legend_handles:
                     leg.set_linewidth(3)
             else:
-                legend = axes.legend(loc='upper center', ncol=len(self.columns))
+                legend = axes.legend(loc='upper center', ncol=num_cols)
         
         labels = []
         for date in dates:
@@ -95,11 +97,11 @@ class DailyPlots:
             days_in_row = 7
         
         if rows == None:
-            x = 31//days_in_row
+            x = int(31//days_in_row)
             rows = x if 31 % days_in_row == 0 else x + 1
             
         elif days_in_row == None:
-            x = 31//rows
+            x = int(31//rows)
             days_in_row = x if 31 % rows == 0 else x + 1
         
         month = str(df["pc_time_end_measurement"].iloc[0].year) + "-" + str(df["pc_time_end_measurement"].iloc[0].month)
@@ -283,6 +285,9 @@ class DailyPlots:
                     days_in_row = 31/rows
                 else:
                     days_in_row = (31//rows) +1
+
+            rows = int(rows)
+            days_in_row = int(days_in_row)
             
             years_and_months = data["pc_time_end_measurement"].dt.year*100+data["pc_time_end_measurement"].dt.month
             
