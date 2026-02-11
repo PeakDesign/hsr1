@@ -4,6 +4,7 @@ copyright 2024 Peak Design
 this file is part of hsr1, which is distributed under the GNU Lesser General Public License v3 (LGPL)
 """
 import math
+import datetime
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -156,18 +157,23 @@ class DailyPlots:
             last_valid_day = all_days[-1]
             
             title = ""
-            months = pd.Series(pd.to_datetime(days)).dt.strftime("%B").unique()
-            if len(months) == 1:
-                title += months[0]
-            else:
-                title += ", ".join(months[:-1]) + " and " + months[-1]
+
+            title += datetime.datetime.strftime(first_day, "%d %b %Y")
+            title += " - " + datetime.datetime.strftime(last_valid_day, "%d %b %Y")
             
-            title += " "            
-            years = pd.Series(pd.to_datetime(days)).dt.year.unique()
-            if len(years) == 1:
-                title += str(years[0])
-            else:
-                title += ", ".join(str(years[:-2])) + " and " + str(years[-1])
+            # title = ""
+            # months = pd.Series(pd.to_datetime(days)).dt.strftime("%B").unique()
+            # if len(months) == 1:
+            #     title += months[0]
+            # else:
+            #     title += ", ".join(months[:-1]) + " and " + months[-1]
+            #
+            # title += " "            
+            # years = pd.Series(pd.to_datetime(days)).dt.year.unique()
+            # if len(years) == 1:
+            #     title += str(years[0])
+            # else:
+            #     title += ", ".join(str(years[:-2])) + " and " + str(years[-1])
             
             
             self.plot_page(row_dates, df, last_valid_day, title, "%b-%d")

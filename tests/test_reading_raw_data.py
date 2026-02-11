@@ -15,6 +15,7 @@ class TestRawDatabase:
         data, deployment_metadata = hsr1.read_txt.read_raw_txt(data_filepath, deployment_metadata_filepath=
                                   deployment_metadata_filepath)
         db_driver.store_raw(data, deployment_metadata)
+        db_driver.store_raw(data, deployment_metadata)
 
         assert(os.path.exists(database_location))
         assert(os.path.getsize(database_location) > 100)

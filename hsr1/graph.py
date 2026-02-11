@@ -231,7 +231,7 @@ class Graph:
     
     def daily_aod_cimel(self, aod_type:str="aod_microtops", wavelengths:list=None, 
                         period="monthly", rows=None, days_in_row=None, 
-                        upper_limit=1, lower_limit=0,
+                        max_limit=1, min_limit=0,
                         clearsky_filter:str="wood", clearsky_filter_kwargs:dict={},
                         dataframe=None):
         """daily plot of the aod at the wavelengths measured by cimel spectrometers
@@ -1214,7 +1214,11 @@ class Graph:
             except Exception as e:
                 print("failed plotting GPSAge\n"+str(e))
             try:
-                dh.plot_one_hist("NSV", axes["NSV"], limited_bins=True, zero_axes=True, ylims=(0, 50))
+                max_nsv = np.max(data["NSV"])
+                if max_nsv > 50:
+                    dh.plot_one_hist("NSV", axes["NSV"], limited_bins=True, zero_axes=True, ylims=(0, 50))
+                else:
+                    dh.plot_one_hist("NSV", axes["NSV"], limited_bins=True, zero_axes=True)
             except KeyboardInterrupt as e:
                 raise e
             except Exception as e:

@@ -93,7 +93,6 @@ class SqliteDBStore():
                 if len(spectral_data) == 0:
                     print("all timestamps are duplicated, no data is being added")
                 
-                print(deployment_metadata)
                 duplicated_deployment_indices = []
                 existing_deployment_metadata = db_load.load_metadata()
                 for i in range(len(deployment_metadata)):
@@ -104,7 +103,6 @@ class SqliteDBStore():
                             duplicated_deployment_indices.append(i)
                             break
                 deployment_metadata = deployment_metadata.loc[~deployment_metadata.index.isin(duplicated_deployment_indices)]
-                print(deployment_metadata)
 
 
         
@@ -191,6 +189,16 @@ class SqliteDBStore():
             store = SqliteDBStore(self.driver)
             deployment_metadata = store.match_deployment_ids(deployment_metadata, db_load)
             deployment_metadata = store.match_dataseries_ids(deployment_metadata, db_load)
+            duplicated_deployment_indices = []
+            existing_deployment_metadata = db_load.load_metadata()
+            for i in range(len(deployment_metadata)):
+                deployment_metadata_row = deployment_metadata.iloc[i]
+                for j in range(len(existing_deployment_metadata)):
+                    existing_deployment_metadata_row = existing_deployment_metadata.iloc[j]
+                    if deployment_metadata_row.equals(existing_deployment_metadata_row):
+                        duplicated_deployment_indices.append(i)
+                        break
+            deployment_metadata = deployment_metadata.loc[~deployment_metadata.index.isin(duplicated_deployment_indices)]
         else:
             deployment_metadata["deployment_id"] = str(uuid.uuid1())
             deployment_metadata["dataseries_id"] = str(uuid.uuid1())
