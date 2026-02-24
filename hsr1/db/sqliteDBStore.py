@@ -143,12 +143,13 @@ class SqliteDBStore():
     
     
     def store_raw(self, dfs, deployment_metadata=None):
-        """stores raw data to the database. has the same format as regular store, with some backwards compatibility.
+        """stores raw data to the database. The required format is the same format as the output from read_txt.read_raw_txt(),
+        allowing the output from that to be easily passed to this function
         
         params:
             dfs: tuple of dataframes, one dataframe per channel
                 alternatively, when deployment metadata is None, a tuple containing:
-                    (tuple of dfs which is the same as described above, and deployment_metadata dataframe.)
+                    (tuple of dfs, one per channel, and deployment_metadata dataframe.)
                 this allows both parameters to be passed as one, which is the same format as read_txt.read_raw_txt outputs
             deployment_metadata: dataframe with one row, containing the deployment metadata for the dataseries being stored
                 alternatively, None if the deployment metadata is being passed in the dfs parameter.
