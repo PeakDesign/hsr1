@@ -143,7 +143,7 @@ class SqliteDBStore():
     
     
     def store_raw(self, dfs, deployment_metadata=None):
-        """stores raw data to the database
+        """stores raw data to the database. has the same format as regular store, with some backwards compatibility.
         
         params:
             dfs: tuple of dataframes, one dataframe per channel
@@ -478,7 +478,6 @@ class SqliteDBStore():
             for j, existing_deployment in enumerate(existing_deployment_metadata.drop(id_type, axis=1).iterrows()):
                 if deployment[1].equals(existing_deployment[1]):
                     found = True
-                    print("deployment metadata matches, using same deployment id")
                     df.loc[i,id_type] = existing_deployment_metadata.loc[j,id_type]
                     break
             if not found:

@@ -61,11 +61,11 @@ class SqliteDBLoad():
              timezone:str="+00:00",
              **kwargs,
              ) -> pd.DataFrame:
-        ##### TODO: fix docstring
         """loads data from the database
         params:
             columns: list of column names to extract from database, if empty, returns all
             table: which table to load data from. Not necessary but can be useful to specify when multiple tables have the same column
+                available tables: spectral_data, system_data, accessory_data, ind_ch, hdr, deployment_metadata, precalculated_values, raw_data
             start_time, end_time: for only selecting data within a time period
                 format: ISO-8601("2023-05-23 00:00:00")
                 if you dont put in a full datetime, it will assume first timestamp,
@@ -85,13 +85,16 @@ class SqliteDBLoad():
         
         if the start and end times dont include the dataset, it will return an empty dataframe,
         if the start or end times are invalid, it will ignore it and include the whole dataset, subject to other conditions
+
+        if loading a single column of raw data, it will automatically be expanded to a 800-column dataframe for each wavelength
         """
         if not os.path.exists(self.db_name):
             raise Exception(f"database '{self.db_name}' does not exist")
         column_headers = self.load_table_names()
         all_column_headers = self.load_table_names()
-        if "raw_data" in column_headers.keys():
-            del column_headers["raw_data"]
+
+        if table == "raw_data" and len(columns) == 1:
+            columns = ["pc_time_end_measurement"] + columns
         
         
         ##### if table is specified, check all columns exist
@@ -111,6 +114,8 @@ class SqliteDBLoad():
         ##### make a list of all the column headers except accessory and a list of all the accessory column headers
         if table == "accessory_data" or table == "ind_ch" or table == "hdr":
             table_type = "accessory"
+        elif table == "raw_data":
+            table_type = "raw"
         else:
             column_headers, table_type = self.__guess_type(column_headers, columns)
         
@@ -121,7 +126,8 @@ class SqliteDBLoad():
         for column in columns:
             found = False
             for key in column_headers:
-                if column in column_headers[key] and key != "raw":
+                # if column in column_headers[key] and key != "raw":
+                if column in column_headers[key]:
                     found = True
                     table_and_column_names.append(key+"."+column)
                     output_columns.append(column)
@@ -230,6 +236,10 @@ class SqliteDBLoad():
                 result = ser.decode_dataframe(result, ["global_spectrum"])
             if "diffuse_spectrum" in output_columns:
                 result = ser.decode_dataframe(result, ["diffuse_spectrum"])
+            if "raw_data" in all_column_headers.keys():
+                for col in output_columns:
+                    if col in all_column_headers["raw_data"] and col != "pc_time_end_measurement":
+                        result = ser.decode_dataframe(result, [col])
         
         
         if "pc_time_end_measurement" in result.columns:
@@ -239,6 +249,17 @@ class SqliteDBLoad():
         
         if len(result) == 0:
             raise ValueError("No data matches your query, check your start_time, end_time and any conditions")
+
+        if table == "raw_data":
+            num_data_cols = len(columns)
+            if "pc_time_end_measurement" in columns:
+                num_data_cols -= 1
+            if num_data_cols == 1:
+                # get the column that isnt time
+                data_col = columns[1] if columns[0] == "pc_time_end_measurement" else columns[0]
+                result = pd.DataFrame(np.stack(result[data_col]), 
+                                      index=result["pc_time_end_measurement"], 
+                                      columns=np.arange(300, 1101))
         
         return result
 
@@ -306,11 +327,34 @@ class SqliteDBLoad():
         return raw_channels, deployment_metadata
 
 
-    
+
     def load_raw(self, columns:[str]=[], 
+                 start_time:str=None, 
+                 end_time:str=None,
+                 condition:str="",
+                 raise_on_missing:bool=True,
+                 sort:bool=True,
+                 timezone:str="+00:00"
+                 ) -> pd.DataFrame:
+        """
+        runs load with table="raw_data".  
+        same parameters and returns as load()
+
+        note: this function has changed in version 1.4 to be a wrapper around load()
+        the only change to the outputs is that pc_time_end_measurement now comes with its timezone,
+        to match the regular load() method.
+        """
+        return self.load(columns, "raw_data", start_time, end_time, condition,
+                         raise_on_missing, sort, True, timezone)
+    
+    def old_load_raw(self, columns:[str]=[], 
                  start_time=None, 
                  end_time=None):
-        """loads the raw data from the raw_data table
+        """
+        THIS FUNCTION HAS BEEN REPLACED BY load_raw(). this implementation exists only for testing purposes and will be removed soon
+
+        loads the raw data from the raw_data table
+        
         
         params: 
             columns: list of columns that you want to load, they are in the format:
@@ -546,7 +590,9 @@ class SqliteDBLoad():
         if "accessory_data" in column_headers.keys() or "deployment_metadata" in column_headers.keys():
             normal_column_headers = column_headers.copy()
             
-            accessory_column_headers = deployment_column_headers = []
+            accessory_column_headers = []
+            deployment_column_headers = []
+            raw_column_headers = []
             if "accessory_data" in column_headers.keys():
                 accessory_column_headers += column_headers["accessory_data"]
                 del normal_column_headers["accessory_data"]
@@ -559,9 +605,14 @@ class SqliteDBLoad():
                 accessory_column_headers += column_headers["hdr"]
                 del normal_column_headers["hdr"]
 
+            if "raw_data" in column_headers.keys():
+                raw_column_headers += column_headers["raw_data"]
+                del normal_column_headers["raw_data"]
+
             if "deployment_metadata" in column_headers.keys():
                 deployment_column_headers = column_headers["deployment_metadata"]
                 del normal_column_headers["deployment_metadata"]
+
 
 
 
@@ -589,6 +640,7 @@ class SqliteDBLoad():
             has_normal_data = np.isin(check_columns, normal_column_headers_list).any()
             has_deployment_data = np.isin(check_columns, deployment_column_headers).any()
             has_accessory_data = np.isin(check_columns, accessory_column_headers).any()
+            has_raw_data = np.isin(check_columns, raw_column_headers).any()
              
             ##### there are duplicate column names in different tables
             ##### where there are columns in multiple tables being selected, 
@@ -634,7 +686,7 @@ class SqliteDBLoad():
                 if not only_normal and not only_deployment:
                     has_deployment_data = False
             
-            num_table_types = sum([has_normal_data, has_deployment_data, has_accessory_data])
+            num_table_types = sum([has_normal_data, has_deployment_data, has_accessory_data, has_raw_data])
             
             if num_table_types > 1 and len(columns) > 1:
                 raise ValueError("You have requested data from incompatible tables (probably because they have unequal lengths). " + 
@@ -647,6 +699,8 @@ class SqliteDBLoad():
                     _type = "accessory"
                 if has_deployment_data:
                     _type = "deployment"
+                if has_raw_data:
+                    _type = "raw"
             
             
             if _type == "accessory":
@@ -671,5 +725,12 @@ class SqliteDBLoad():
             else:
                 if "deployment_metadata" in column_headers.keys():
                     del column_headers["deployment_metadata"]
+
+            if _type == "raw":
+                column_headers = {"raw_data": column_headers["raw_data"]}
+            else:
+                if "raw_data" in column_headers.keys():
+                    del column_headers["raw_data"]
+
         
         return column_headers, _type
