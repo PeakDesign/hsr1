@@ -55,7 +55,6 @@ class TimeDayGraph:
         if self.max_integral is None:
             self.max_integral = np.nanmax(df[data_col])
         
-            
         bbox = axes.get_window_extent()
         vert_pixels = int(bbox.height)
         

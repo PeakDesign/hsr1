@@ -23,7 +23,7 @@ class TestDniCalculation:
         assert(abs(df["direct_normal_integral"].iloc[1] - 978.99) < 0.01)
         assert(abs(df["direct_normal_integral"].iloc[2] == 0))
 
-    def test_cuttoff_works(self):
+    def test_cutoff_works(self):
         global_data = [200, 180, 160]
         diffuse_data = [20, 10, 160]
         sza = list(np.radians(np.array([10, 80, 20])))
@@ -40,10 +40,17 @@ class TestDniCalculation:
 
     def test_dni_graphs_should_run(self):
 
-        data_filepath = "tests/res/NOAA 2025"
-        deployment_metadata_filepath = "tests/res/NOAA 2025/HSR1-009 NOAA 2025 Deployment.ini"
+        # data_filepath = "tests/res/NOAA 2025"
+        # deployment_metadata_filepath = "tests/res/NOAA 2025/HSR1-009 NOAA 2025 Deployment.ini"
+        # data_filepath = "tests/res/SGP 2022"
+        # deployment_metadata_filepath = "tests/res/SGP 2022/SGP 2022 Deployment.ini"
+        data_filepath = "tests/res/Tara 2023"
+        deployment_metadata_filepath = "tests/res/short_tara_2023/Tara 2023 Deployment.ini"
 
-        database_location = "tests/temp/databases/databases/my_database.db"
+        database_location = "tests/temp/databases/my_database.db"
+
+        if os.path.exists(database_location):
+            os.remove(database_location)
 
         db_driver = hsr1.DBDriver(database_location)
 
@@ -55,7 +62,5 @@ class TestDniCalculation:
         g = hsr1.Graph(db_driver, timezone="-04:00", output_location="tests/temp/plots", block=False)
         
         g.plot_daily_line(columns=["global_integral", "diffuse_integral", "direct_normal_integral"])
-        g.plot_integral()
+        # g.plot_integral()
         plt.show()
-
-        os.remove(database_location)

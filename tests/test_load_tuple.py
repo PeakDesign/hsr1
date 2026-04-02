@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+import numpy as np
 
 import hsr1
 
@@ -11,6 +12,9 @@ class TestLoadTuple:
         deployment_metadata_filepath = "tests/res/NOAA 2025/HSR1-009 NOAA 2025 Deployment.ini"
 
         database_location = "tests/temp/databases/my_database.db"
+
+        if os.path.exists(database_location):
+            os.remove(database_location)
 
         db_driver = hsr1.DBDriver(database_location)
 
@@ -97,8 +101,6 @@ class TestLoadTuple:
         assert(data[0].dtypes.equals(loaded_data[0].dtypes))
         for col in data[0].columns:
             print(col, data[0][col].equals(loaded_data[0][col]))
-        print(data[0]["dataseries_id"])
-        print(loaded_data[0]["dataseries_id"])
         assert(data[0].equals(loaded_data[0]))
         assert(data[1].equals(loaded_data[1]))
         assert(data[2].equals(loaded_data[2]))
@@ -165,15 +167,11 @@ class TestLoadTuple:
         deployment_metadata_filepath = "tests/res/SGP 2022 1d/SGP 2022 Deployment.ini"
 
         database_location_a = "tests/temp/databases/my_database_a.db"
-        database_location_b = "tests/temp/databases/my_database_b.db"
         
         if os.path.exists(database_location_a):
             os.remove(database_location_a)
-        if os.path.exists(database_location_b):
-            os.remove(database_location_b)
 
         db_driver_a = hsr1.DBDriver(database_location_a)
-        db_driver_b = hsr1.DBDriver(database_location_b)
 
         data = hsr1.read_txt.read_raw_txt(data_filepath, deployment_metadata_filepath=
                                   deployment_metadata_filepath)
@@ -201,7 +199,7 @@ class TestLoadTuple:
         assert(data[1].dtypes.equals(loaded_data[1].dtypes))
         for col in data[1].columns:
             print(col, data[1][col].equals(loaded_data[1][col]))
-        assert(data[0][0].equals(loaded_data[0][0]))
+        # assert(data[0][0].values.equals(loaded_data[0][0].values))
+        assert(np.equal(data[0][0].values, loaded_data[0][0].values).all())
         assert(data[1].equals(loaded_data[1]))
         os.remove(database_location_a)
-        # os.remove(database_location_b)

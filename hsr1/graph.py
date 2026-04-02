@@ -123,7 +123,6 @@ class Graph:
                 pass it here, dataframe columns must be columns+["pc_time_end_measurement"]
             max_limit, min_limit: the limit of data that is plotted
         """
-        print("plotting daily line graph")
         data_columns = columns.copy()
         
         timezone = self.timezone
@@ -532,6 +531,15 @@ class Graph:
         ##### calculate aod values
         aod_data = HsrFunc.calc_aod_from_df(data)
         aod_data[["global_integral", "diffuse_integral"]] = data[["global_integral", "diffuse_integral"]]
+        # this does not fix the problem
+        # for col in aod_data.columns:
+        #     if col in ["total_od", "aod_microtops", "aod_wood_2017"]:
+        #         for i in range(len(aod_data)):
+        #             np_array = aod_data.loc[i, col].copy()
+        #             print(len(np_array))
+        #             np_array[np_array == np.inf] = np.nan
+        #             print(len(np_array))
+        #             aod_data.at[i, col] = np_array
         
         clearsky_filter = HsrFunc.calculate_clearsky_filter(data, method=clearsky_filter, kwargs=clearsky_filter_kwargs)
         
@@ -565,7 +573,7 @@ class Graph:
             
             spec_day.supplementary_integral_plot(day_data, axes, first_time, last_time, day, spec_day)
             
-            pc_time_secs = (data["pc_time_end_measurement"].dt.tz_localize(None).astype("int64")/10**9).values.astype(int)
+            pc_time_secs = (data["pc_time_end_measurement"].dt.tz_localize(None).astype("datetime64[s]")).values.astype(int)
             aod_500 = np.stack(aod_data["total_od"].values)[:, 500]*500
             axes[3].plot(pc_time_secs, aod_500, label="optical depth x500")
             axes[3].legend()
@@ -786,7 +794,7 @@ class Graph:
                     new_requirements.remove(not_in_db_req)
             requirements += new_requirements
         
-        data = self.load_data(requirements, dataframe)
+        data = self.load_data(requirements, dataframe, missing_columns="ignore")
         
         data = data.drop_duplicates(["pc_time_end_measurement"])
         
@@ -938,8 +946,12 @@ class Graph:
                         "I_15VCAM",
                         "Latitude",
                         "Longitude"]
-        
-        data = self.load_data(requirements, accessory_dataframe)
+
+        try:
+            data = self.load_data(requirements, accessory_dataframe)
+        except KeyError:
+            print("insufficient data to plot Accessory")
+            return
 
         if len(data.columns) == 1:
             print("insufficient data to plot Accessory")
@@ -1368,8 +1380,10 @@ class Graph:
         if self.driver is None and missing_columns=="raise":
             raise ValueError("database is None and not all the required columns were passed to dataframe")
         
-        
-        data = self.driver.load(columns, raise_on_missing=False, **self.kwargs)
+        raise_on_missing = False
+        if missing_columns == "raise":
+            raise_on_missing = True
+        data = self.driver.load(columns, raise_on_missing=raise_on_missing, **self.kwargs)
 
         # fill gps columns with default values if gps column is missing from database
         columns_match = True

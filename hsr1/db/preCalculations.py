@@ -206,6 +206,8 @@ class PreCalculations:
         """
         
         sza = (math.pi/2) - np.array(self.sun_data["elevation"])
+        # print(sza[1500:])
+        # print(self.sun_data["elevation"][1500:])
         return sza
     
     def azimuth(self):

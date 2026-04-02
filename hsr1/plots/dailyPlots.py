@@ -161,19 +161,6 @@ class DailyPlots:
             title += datetime.datetime.strftime(first_day, "%d %b %Y")
             title += " - " + datetime.datetime.strftime(last_valid_day, "%d %b %Y")
             
-            # title = ""
-            # months = pd.Series(pd.to_datetime(days)).dt.strftime("%B").unique()
-            # if len(months) == 1:
-            #     title += months[0]
-            # else:
-            #     title += ", ".join(months[:-1]) + " and " + months[-1]
-            #
-            # title += " "            
-            # years = pd.Series(pd.to_datetime(days)).dt.year.unique()
-            # if len(years) == 1:
-            #     title += str(years[0])
-            # else:
-            #     title += ", ".join(str(years[:-2])) + " and " + str(years[-1])
             
             
             self.plot_page(row_dates, df, last_valid_day, title, "%b-%d")
@@ -198,7 +185,7 @@ class DailyPlots:
         min_gap = np.min(np.diff(df["pc_time_end_measurement"]))
 
         # smallest min_gap is a minute, so gaps longer than 2mins will be detected
-        min_gap = np.max((min_gap, 60_000_000_000))
+        min_gap = np.max((min_gap, pd.Timedelta(2, "minutes")))
 
         # a multiplier that determines how many times larger a gap has to be than the smallest gap to 
         # be counted as a gap and have a nan value filled in it
@@ -329,7 +316,7 @@ class DailyPlots:
 
             page_start_date = data["pc_time_end_measurement"].iloc[0].date()
             final_date = data["pc_time_end_measurement"].iloc[len(data)-1].date()
-            while page_start_date < final_date:
+            while page_start_date <= final_date:
                 page_end_date = page_start_date + pd.Timedelta(7, "days")
                 page_df = data[np.logical_and(data["pc_time_end_measurement"].dt.date >= page_start_date, data["pc_time_end_measurement"].dt.date < page_end_date)]
 

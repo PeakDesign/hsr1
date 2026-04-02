@@ -22,7 +22,8 @@ def calculate_date_labels(time_series:pd.Series, xlims, target_num_ticks:int=10)
     """
     time_series = time_series.astype(str)
     times = time_series.str.slice(stop=10).unique()
-    times.sort()
+    times = pd.to_datetime(times)
+    times.sort_values()
     dates = pd.date_range(times[0], times[-1]).strftime("%d-%b")
     # dates = pd.DatetimeIndex(times).strftime("%d-%b")
     
@@ -82,6 +83,10 @@ def calculate_sunrise_sunset(data:pd.DataFrame, timezone:pd.Timedelta):
     
     df = df.sort_values("pc_time_end_measurement")
     new_df = new_df.sort_index()
+
+    # redundant conversions, but added to ensure functionality on pandas v3 and v2
+    new_df.index = new_df.index.astype("datetime64[us]")
+    df["pc_time_end_measurement"] = df["pc_time_end_measurement"].astype("datetime64[us]")
     
     new_df = pd.merge_asof(new_df, df, left_index=True, right_on="pc_time_end_measurement", direction="nearest")
     new_df[["gps_longitude", "gps_latitude", "gps_altitude"]] = new_df[["gps_longitude", "gps_latitude", "gps_altitude"]].astype(float)

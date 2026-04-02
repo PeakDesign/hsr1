@@ -62,6 +62,6 @@ class TestDailyGraphs:
                                       deployment_metadata_filepath)
             db_driver.store(data)
             
-        g = hsr1.Graph(db_driver)
+        g = hsr1.Graph(db_driver, start_time="2022-06-11", end_time="2022-06-14")
 
         g.daily_integrals(period="weekly", rows=1, days_in_row=4)

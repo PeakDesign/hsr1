@@ -280,6 +280,9 @@ class DBDriver:
         deployment_ids = {}
         timezones = {}
         timedeltas_series = precalculated_values["dataseries_id"].copy()
+        timedeltas_df = pd.DataFrame(index=precalculated_values.index)
+        timedeltas_df["dataseries_id"] = precalculated_values["dataseries_id"].values
+        timedeltas_df["timedeltas"] = pd.Timedelta(0)
         for i in range(len(deployment_metadata)):
             deployment_id = deployment_metadata.loc[i, "deployment_id"]
             dataseries_id = deployment_metadata.loc[i, "dataseries_id"]
@@ -288,7 +291,10 @@ class DBDriver:
             timezone, timedelta = ref.calculate_timezone(deployment_metadata.loc[i, "timezone"])
             timezones[deployment_metadata.loc[i, "deployment_id"]] = timezone
             
-            timedeltas_series[timedeltas_series == dataseries_id] = timedelta
+            timedeltas_df.loc[timedeltas_df["dataseries_id"] == dataseries_id, "timedeltas"] = timedelta
+
+        timedeltas_series = pd.TimedeltaIndex(timedeltas_df["timedeltas"])
+
         
         
         timezones_series = precalculated_values["dataseries_id"].replace(deployment_ids).replace(timezones)

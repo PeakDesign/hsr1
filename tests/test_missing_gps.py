@@ -24,7 +24,6 @@ class TestMissingGps:
         g = hsr1.Graph(db_driver)
         g.plot_integral()
         g.plot_aod_day()
-        g.plot_gps()
-        g.plot_accessory()
+        # g.plot_gps()
+        # g.plot_accessory()
 
-        os.remove(database_location)

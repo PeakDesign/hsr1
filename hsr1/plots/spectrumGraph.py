@@ -44,9 +44,7 @@ class SpectrumGraph:
         vert_pixels = int(bbox.height)
         horiz_pixels = int(bbox.width)
         
-        
-        
-        pc_time_secs = (df["pc_time_end_measurement"].dt.tz_localize(None).astype("int64")/10**9).values.astype(int)
+        pc_time_secs = (df["pc_time_end_measurement"].dt.tz_localize(None).astype("datetime64[s]").astype(int)).values.astype(int)
         
         first_timestamp = df["pc_time_end_measurement"].iloc[0]
         last_timestamp = df["pc_time_end_measurement"].iloc[-1]
@@ -108,7 +106,7 @@ class SpectrumGraph:
         data = data[np.logical_and(data["pc_time_end_measurement"]>=left_xlim, 
                                    data["pc_time_end_measurement"]<=right_xlim)]
         
-        pc_time_secs = (data["pc_time_end_measurement"].astype("int64")/10**9).values.astype(int)
+        pc_time_secs = (data["pc_time_end_measurement"].astype("datetime64[s]")).values.astype(int)
         axes[3].plot(pc_time_secs, data["global_integral"], label="global integral")
         axes[3].plot(pc_time_secs, data["diffuse_integral"], label="diffuse integral")
         axes[3].legend()

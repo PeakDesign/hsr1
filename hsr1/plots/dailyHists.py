@@ -18,7 +18,7 @@ class DailyHists:
         data = data.copy()
         data["pc_time_end_measurement"] = data["pc_time_end_measurement"].dt.tz_localize(None)
         dates = data["pc_time_end_measurement"].dt.date
-        np_dates = dates.to_numpy()
+        np_dates = dates.to_numpy().copy()
         np_dates.sort()
         dates = pd.Series(np_dates)
         data["pc_time_end_measurement"] = pd.DatetimeIndex(dates)
@@ -152,7 +152,7 @@ class DailyHists:
         
         
         start = datetime.datetime(1970,1,1)
-        a_range = [[(data["pc_time_end_measurement"].iloc[0]-start).total_seconds()*10e8, (data["pc_time_end_measurement"].iloc[-1]-start).total_seconds()*10e8],
+        a_range = [[(data["pc_time_end_measurement"].iloc[0]-start).total_seconds(), (data["pc_time_end_measurement"].iloc[-1]-start).total_seconds()],
                   [min(column_data), max(column_data)]]
         
         if ignore_zero and ((data[column] > 0).all() or (data[column] < 0).all()):
@@ -170,15 +170,12 @@ class DailyHists:
         
         hist = None
         if len(data) != 0:
-            # if weight:
-            #     hist = axes.hist2d(data["pc_time_end_measurement"], column_data, bins=bins, cmap="jet", cmin=1, range=a_range, weights=weights)
-            # else:
-            #     hist = axes.hist2d(data["pc_time_end_measurement"], column_data, bins=bins, cmap="jet", cmin=1, range=a_range)
+            epoch_time = (data["pc_time_end_measurement"]-start).dt.total_seconds()
             
             if weight:
-                hist_array, bin_edges_x, bin_edges_y = np.histogram2d(data["pc_time_end_measurement"], column_data, bins=bins, range=a_range, weights=weights)
+                hist_array, bin_edges_x, bin_edges_y = np.histogram2d(epoch_time, column_data, bins=bins, range=a_range, weights=weights)
             else:
-                hist_array, *_ = np.histogram2d(data["pc_time_end_measurement"], column_data, bins=bins, range=a_range)
+                hist_array, *_ = np.histogram2d(epoch_time, column_data, bins=bins, range=a_range)
             
             hist_array = hist_array.T
             hist_array = np.flip(hist_array, 0)

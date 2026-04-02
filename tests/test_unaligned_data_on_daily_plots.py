@@ -38,8 +38,8 @@ class TestUnalignedDataOnDailyPlots:
             print("overwriting database")
             os.remove(db_name)
 
-        dataset = hsr1.synthetic_dataset.SyntheticDataset(start_date="2024-01-10 00:00:00+00:00",
-                                                         end_date="2024-01-10 23:59:00+00:00",
+        dataset = hsr1.synthetic_dataset.SyntheticDataset(start_date="2024-01-10 00:00:00",
+                                                         end_date="2024-01-10 23:59:00",
                                                          latitude=location["lat"],
                                                          longitude=location["lon"],
                                                          altitude=location["alt"])
@@ -68,4 +68,3 @@ class TestUnalignedDataOnDailyPlots:
         g.daily_integrals()
         g.daily_temps()
 
-        os.remove(db_name)

@@ -48,15 +48,12 @@ class ReformatData():
                 accessory_data = self.reformat_accessory_data(gps_data)
 
             system_data = self.reformat_system_data(gps_data, gps_type, accessory_data, spectral_data.index)
-            
         if system_data is not None:
             if deployment_metadata["mobile"].iloc[0]:
                 aux_average_period = int(deployment_metadata["aux_average_period"].iloc[0])
-                ##### tolerance in in ns, convert s to ns
-                system_data = self.match_sample_ids(spectral_data, system_data, "sample_id", tolerance=aux_average_period*10**9)
+                system_data = self.match_sample_ids(spectral_data, system_data, "sample_id", tolerance=aux_average_period)
             else:
                 system_data = self.match_sample_ids(spectral_data, system_data, "sample_id")
-            
             ##### fills in all nan sample_id values as that will cause a crash
             nan_readings = system_data["sample_id"].isna()
             uuids = [uuid.uuid1() for i in range(sum(nan_readings))]
@@ -405,9 +402,9 @@ class ReformatData():
         # system_timestamps = system_timestamps[within_average_period]
         
         str_cols = ["pc_time_end_measurement", "gps_time", "gps_status"]
-        float_cols = ~np.isin(system_data.columns, str_cols)
-        floats = system_data.loc[:, float_cols].astype(float)
-        system_data.loc[:, float_cols] = floats
+        float_cols = system_data.columns[~np.isin(system_data.columns, str_cols)]
+        for col in float_cols:
+            system_data[col] = system_data[col].astype(float)
         
         
         agg_dict = {col:"last" for col in system_data.columns}
@@ -425,7 +422,12 @@ class ReformatData():
         
         ##### filter out readings that are more than aux_average_period from the previous reading.
         #####   filters the reading after big jumps
-        time_since_last_reading = np.diff(pd.to_datetime(averaged_system_data["pc_time_end_measurement"]).astype("int64").values/10**9)
+        # time_since_last_reading = np.diff(pd.to_datetime(averaged_system_data["pc_time_end_measurement"]).astype("int64").values/10**9)
+        epoch_start = pd.to_datetime("01-01-1970 00:00:00")
+        epoch_seconds = (pd.to_datetime(averaged_system_data["pc_time_end_measurement"]) - epoch_start).dt.total_seconds()
+        time_since_last_reading = np.diff(epoch_seconds)
+
+        # this causes an issue if some timestamps are just 1 second off the stated interval, they are dropped
         normal_gaps = time_since_last_reading <= aux_average_period
         normal_gaps = np.array([1] + list(normal_gaps)).astype(bool)
         averaged_system_data = averaged_system_data.loc[normal_gaps, :]
@@ -580,16 +582,20 @@ class ReformatData():
         to_be_matched = self.reset_index(to_be_matched, "pc_time_end_measurement")
         to_be_matched["pc_time_end_measurement"] = pd.to_datetime(to_be_matched["pc_time_end_measurement"])
         
+        epoch_start = pd.to_datetime("01-01-1970 00:00:00")
         
-        to_be_matched["pc_time_end_measurement"] = to_be_matched["pc_time_end_measurement"].astype("int64")
-        match_df["pc_time_end_measurement"] = match_df["pc_time_end_measurement"].astype("int64")
+        # convert to epoch seconds
+        # to_be_matched["pc_time_end_measurement"] = to_be_matched["pc_time_end_measurement"].astype("int64")
+        # match_df["pc_time_end_measurement"] = match_df["pc_time_end_measurement"].astype("int64")
+        to_be_matched["pc_time_end_measurement"] = (to_be_matched["pc_time_end_measurement"] - epoch_start).dt.total_seconds()
+        match_df["pc_time_end_measurement"] = (match_df["pc_time_end_measurement"] - epoch_start).dt.total_seconds()
         
         
         merged_df = pd.merge_asof(to_be_matched, match_df, on="pc_time_end_measurement", direction="nearest", tolerance=tolerance)
         
         to_be_matched["sample_id"] = merged_df["sample_id"]
         
-        to_be_matched["pc_time_end_measurement"] = pd.to_datetime(to_be_matched["pc_time_end_measurement"])
+        to_be_matched["pc_time_end_measurement"] = pd.to_datetime(to_be_matched["pc_time_end_measurement"], unit="s")
         
         return to_be_matched
     
