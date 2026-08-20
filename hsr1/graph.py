@@ -263,15 +263,6 @@ class Graph:
         
         data = data.drop_duplicates(["pc_time_end_measurement"])
         
-        deployment_metadata = None
-        if self.deployment_metadata is None and self.driver is not None:
-            deployment_metadata = self.driver.load_metadata()
-        else:
-            deployment_metadata = self.deployment_metadata
-        
-        if deployment_metadata is not None:
-            title = deployment_metadata["deployment_description"][0] + "\n"
-        
         aod_data = HsrFunc.calc_aod_from_df(data, cimel_wavelengths)
         aod_data[["global_integral", "diffuse_integral", "sza"]] = data[["global_integral", "diffuse_integral", "sza"]]
         
@@ -287,8 +278,8 @@ class Graph:
         self.plot_daily_line(wavelengths.astype(str), 
                              period, rows, days_in_row, 
                              dataframe=limited_df, 
-                             max_limit=upper_limit, min_limit=0, 
-                             title_prefix=aod_type+"\n")
+                             max_limit=max_limit, min_limit=0, 
+                             title_prefix=aod_type+"; ")
         
         
     """-------------------
@@ -798,7 +789,7 @@ class Graph:
         
         data = data.drop_duplicates(["pc_time_end_measurement"])
         
-        if "gps_longitude" in requirements and not "gps_longitude" in data.columns:
+        if "gps_longitude" in requirements and not "gps_longitude" in data.columns and self.driver is not None:
             deployment_metadata = self.driver.db_load.load_metadata(["default_longitude", "default_latitude", "default_elevation"]).iloc[0]
             data["gps_longitude"] = deployment_metadata["default_longitude"]
             data["gps_latitude"] = deployment_metadata["default_latitude"]
@@ -1228,9 +1219,9 @@ class Graph:
             try:
                 max_nsv = np.max(data["NSV"])
                 if max_nsv > 50:
-                    dh.plot_one_hist("NSV", axes["NSV"], limited_bins=True, zero_axes=True, ylims=(0, 50))
+                    dh.plot_one_hist("NSV", axes["NSV"], zero_axes=True, ylims=(0, 50))
                 else:
-                    dh.plot_one_hist("NSV", axes["NSV"], limited_bins=True, zero_axes=True)
+                    dh.plot_one_hist("NSV", axes["NSV"], zero_axes=True)
             except KeyboardInterrupt as e:
                 raise e
             except Exception as e:
@@ -1367,6 +1358,11 @@ class Graph:
         columns = np.array(columns + ["pc_time_end_measurement"])
         if dataframe is not None:
             if np.isin(columns, dataframe.columns).all():
+                time_col = pd.DatetimeIndex(pd.to_datetime(dataframe["pc_time_end_measurement"]))
+                if time_col.tz is None:
+                    dataframe["pc_time_end_measurement"] = time_col.tz_localize(self.timezone)
+                else:
+                    dataframe["pc_time_end_measurement"] = time_col.tz_convert(self.timezone)
                 return dataframe.copy()
             else:
                 if missing_columns == "raise":
@@ -1375,7 +1371,13 @@ class Graph:
                 for column in columns:
                     if column in dataframe.columns:
                         output_df[column] = dataframe[column]
-                return output_df
+                # output_df["pc_time_end_measurement"] = pd.DatetimeIndex(pd.to_datetime(output_df["pc_time_end_measurement"])).tz_convert(self.timezone)
+                time_col = pd.DatetimeIndex(pd.to_datetime(output_df["pc_time_end_measurement"]))
+                if time_col.tz is None:
+                    output_df["pc_time_end_measurement"] = time_col.tz_localize(self.timezone)
+                else:
+                    output_df["pc_time_end_measurement"] = time_col.tz_convert(self.timezone)
+                return output_df.copy()
         
         if self.driver is None and missing_columns=="raise":
             raise ValueError("database is None and not all the required columns were passed to dataframe")

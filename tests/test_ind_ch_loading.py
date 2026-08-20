@@ -55,8 +55,8 @@ class TestIndChLoading:
         data = hsr1.read_txt.read(data_filepath, deployment_metadata_filepath=
                                   deployment_metadata_filepath, end_date="2025-03-20")
         data = tuple(list(data[:3]) + [data[-1]])
-        for datafile in data:
-            print(datafile.columns)
+        # for datafile in data:
+        #     print(datafile.columns)
 
 
         database_location = "tests/temp/databases/my_database.db"

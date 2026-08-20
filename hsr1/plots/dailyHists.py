@@ -111,7 +111,9 @@ class DailyHists:
             if not non_zero_df.isnull().all():
                 ##### min bin is 10, max is 100
                 
-                space_covered = max(10, int((np.nanmax(non_zero_df)-np.nanmin(non_zero_df))*1000))
+                space_covered = max(10, int((np.nanmax(non_zero_df)-np.nanmin(non_zero_df))))
+                # why did this multiply by 1k?
+                # space_covered = max(10, int((np.nanmax(non_zero_df)-np.nanmin(non_zero_df))*1000))
                 ybin = min(100, space_covered)
             else:
                 ybin = 11
@@ -123,7 +125,6 @@ class DailyHists:
                 non_zero_in_range_df = None
                 if ylims is not None:
                     non_zero_in_range_df = non_zero_df[np.logical_and(np.greater_equal(non_zero_df.values, ylims[0]), np.less_equal(non_zero_df.values, ylims[1]))]
-                    print(np.max(non_zero_in_range_df))
                     data_range = np.max(non_zero_in_range_df) - np.min(non_zero_in_range_df)
                     
 
@@ -131,9 +132,13 @@ class DailyHists:
                     data_range = np.max(non_zero_df)+1
                     if ylims is not None:
                         data_range = np.max(non_zero_in_range_df)+1
-                min_diff = np.min(np.diff(np.sort(np.unique(non_zero_df))))
+                min_diff = 1
+                # check in case all nsv values are identical
+                if len(np.unique(non_zero_df)) > 1:
+                    min_diff = np.min(np.diff(np.sort(np.unique(non_zero_df))))
                 
-                ybin = int(data_range/min_diff)
+                ybin = data_range/min_diff
+                ybin = int(np.ceil(ybin))
                  
             if one_value:
                 ybin = 10

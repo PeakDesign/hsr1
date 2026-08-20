@@ -17,6 +17,99 @@ class SqliteDBStore():
     def __init__(self, driver):
         self.db_name = driver.db_name
         self.driver = driver
+
+        # the datatype of all the columns that will be stored in the database
+        self.column_dtypes = {
+            # columns in spectral_data
+            "pc_time_end_measurement":"TEXT",
+            "sample_id":"TEXT",
+            "dataseries_id":"TEXT",
+            "global_spectrum":"BLOB",
+            "diffuse_spectrum":"BLOB",
+            "global_integral":"NUMERIC",
+            "diffuse_integral":"NUMERIC",
+            "global_molar":"NUMERIC",
+            "diffuse_molar":"NUMERIC",
+            "camera_temp":"NUMERIC",
+            # columns in system_data
+            "gps_time":"TEXT",
+            "gps_status":"TEXT",
+            "gps_longitude":"NUMERIC",
+            "gps_altitude":"NUMERIC",
+            "pressure":"NUMERIC",
+            "baro_temp":"NUMERIC",
+            "rh":"NUMERIC",
+            "rh_temp":"NUMERIC",
+            # columns in precalculated_values
+            "sza":"NUMERIC",
+            "azimuth":"NUMERIC",
+            "toa_hi":"NUMERIC",
+            "sed":"NUMERIC",
+            "airmass":"NUMERIC",
+            # columns in accessory_data
+            "Clock_Error":"NUMERIC",
+            "Latitude":"NUMERIC",
+            "Longitude":"NUMERIC",
+            "Altitude":"NUMERIC",
+            "GPSAge":"NUMERIC",
+            "NSV":"INTEGER",
+            "GPSSpare":"NUMERIC",
+            "_15Vin":"NUMERIC",
+            "_3VCAP":"NUMERIC",
+            "HTRIn":"NUMERIC",
+            "Vcc":"NUMERIC",
+            "VSpare":"NUMERIC",
+            "I_Tot":"NUMERIC",
+            "I_15VPC":"NUMERIC",
+            "I_15VCAM":"NUMERIC",
+            "I_5VPC":"NUMERIC",
+            "ISpare":"NUMERIC",
+            "T_CPU":"NUMERIC",
+            "T_Bezel":"NUMERIC",
+            "T_RH":"NUMERIC",
+            "T_Baro":"NUMERIC",
+            "RH":"NUMERIC",
+            "Pressure":"NUMERIC",
+            "IMU_Output_Type":"NUMERIC",
+            "Yaw":"NUMERIC",
+            "Roll":"NUMERIC",
+            "Pitch":"NUMERIC",
+            "Q_W":"NUMERIC",
+            "Q_X":"NUMERIC",
+            "Q_Y":"NUMERIC",
+            "Q_Z":"NUMERIC",
+            "Acc_X":"NUMERIC",
+            "Acc_Y":"NUMERIC",
+            "Acc_Z":"NUMERIC",
+            "IMU1":"NUMERIC",
+            "IMU2":"NUMERIC",
+            "Control_flags":"NUMERIC",
+            "Control_flags2":"NUMERIC",
+            "StatusFlags":"NUMERIC",
+            "Heater":"NUMERIC",
+            "MsgCount":"NUMERIC",
+            "RdgCount":"NUMERIC",
+            "Watchdog":"NUMERIC",
+            "gps_time":"TEXT",
+            "cpu_time":"TEXT",
+            # columns in ind_ch
+            "ch0":"NUMERIC",
+            "ch1":"NUMERIC",
+            "ch2":"NUMERIC",
+            "ch3":"NUMERIC",
+            "ch4":"NUMERIC",
+            "ch5":"NUMERIC",
+            "ch6":"NUMERIC",
+            "ch7":"NUMERIC",
+            "ch8":"NUMERIC",
+            # columns in hdr
+            "scale_1":"NUMERIC",
+            "offset_1":"NUMERIC",
+            "scale_2":"NUMERIC",
+            "offset_2":"NUMERIC",
+
+        }
+
     
     
     
@@ -451,7 +544,13 @@ class SqliteDBStore():
         question_marks = ["?" for i in range(len(df.columns))]
         question_marks_string = ", ".join(question_marks)
         
-        column_string = ", ".join(df.columns.to_list())
+        old_column_string = ", ".join(df.columns.to_list())
+        column_string = ""
+        for col in df.columns:
+            column_string += ", " + col
+            if col in self.column_dtypes:
+                column_string += " " + self.column_dtypes[col]
+        column_string = column_string[2:]
         
         create_table_sql = "CREATE TABLE IF NOT EXISTS "+table_name+"("+column_string+")"
         cur.execute(create_table_sql)

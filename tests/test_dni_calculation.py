@@ -63,4 +63,3 @@ class TestDniCalculation:
         
         g.plot_daily_line(columns=["global_integral", "diffuse_integral", "direct_normal_integral"])
         # g.plot_integral()
-        plt.show()

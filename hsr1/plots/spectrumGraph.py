@@ -155,7 +155,7 @@ class SpectrumGraph:
     
     def plot_all(self, data, axes_list):
         self.global_spectrum(data, axes_list[0], 2)
-        self.diffuse_spectrum(data, axes_list[1], 10)
+        self.diffuse_spectrum(data, axes_list[1], 2)
         self.direct_normal_spectrum(data, axes_list[2], 2)
         
         

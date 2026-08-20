@@ -22,7 +22,7 @@ class TestGraphs:
         driver = hsr1.DBDriver(db_name=database_location)
         driver.store(data)
         
-        g = hsr1.Graph(driver, block=True, output_location=png_save_location)
+        g = hsr1.Graph(driver, block=False, output_location=png_save_location)
 
         g.plot_daily_line(["global_integral"], period=1)
         

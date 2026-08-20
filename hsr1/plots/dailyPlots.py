@@ -147,6 +147,7 @@ class DailyPlots:
         for days in page_days:
             
             first_day = days[0]
+            last_day = days[-1]
             row_dates = []
             for i in range(rows):
                 this_row = []
@@ -159,7 +160,7 @@ class DailyPlots:
             title = ""
 
             title += datetime.datetime.strftime(first_day, "%d %b %Y")
-            title += " - " + datetime.datetime.strftime(last_valid_day, "%d %b %Y")
+            title += " - " + datetime.datetime.strftime(last_day, "%d %b %Y")
             
             
             

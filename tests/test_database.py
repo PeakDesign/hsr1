@@ -25,8 +25,6 @@ class TestDatabase:
         assert(os.path.exists(database_location))
         assert(os.path.getsize(database_location) > 100)
 
-        os.remove(database_location)
-        assert(not os.path.exists(database_location))
 
     
     def test_can_read_from_database(self):
@@ -119,7 +117,7 @@ class TestDatabase:
                                   deployment_metadata_filepath)
 
         db_driver.store(txt_data)
-        g = hsr1.Graph(db_driver)
+        g = hsr1.Graph(db_driver, block=False)
         g.plot_gps()
 
 

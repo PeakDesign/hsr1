@@ -20,7 +20,7 @@ class TestUnalignedDataOnDailyPlots:
 
         db_driver.store(txt_data)
 
-        g = hsr1.Graph(db_driver, timezone="00:00", output_location="tests/temp/plots", block=True)
+        g = hsr1.Graph(db_driver, timezone="00:00", output_location="tests/temp/plots", block=False)
 
         g.daily_integrals()
 
@@ -64,7 +64,7 @@ class TestUnalignedDataOnDailyPlots:
         db = hsr1.DBDriver(db_name)
         db.store(dfs)
 
-        g = hsr1.Graph(db)
+        g = hsr1.Graph(db, block=False)
         g.daily_integrals()
         g.daily_temps()
 
